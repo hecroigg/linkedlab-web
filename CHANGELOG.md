@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+
+- Immersive scroll-driven 3D digital ecosystem on the homepage
+- Six-sided LinkedLab system cube with orbiting service satellites and animated geometry
+- Contextual dark navigation while exploring the 3D scene
+- Kinetic headline, interactive cursor trail and continuous capability marquee
+- More cinematic section, page and opening transitions with responsive fallbacks
+
 ## 1.2.0
 
 - Interactive branded opening sequence on the homepage, with skip and reduced-motion support

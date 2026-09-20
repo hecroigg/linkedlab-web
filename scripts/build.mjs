@@ -40,6 +40,8 @@ const cards = (items, className = "feature-grid") => `<div class="${className}">
 
 const checklist = (items) => `<ul class="check-list">${items.map((item) => `<li>${icon("check")}<span>${esc(item)}</span></li>`).join("")}</ul>`;
 
+const kineticTitle = (title) => title.split(" ").map((word, index) => `<span style="--word:${index}">${esc(word)}</span>`).join(" ");
+
 const sectionHead = (kicker, title, text = "", level = 2) => `<div class="section-head"><p class="eyebrow">${esc(kicker)}</p><h${level}>${esc(title)}</h${level}>${text ? `<p>${esc(text)}</p>` : ""}</div>`;
 
 const cta = (lang, title, text = "") => {
@@ -51,10 +53,11 @@ function renderHome(lang) {
   const t = content[lang];
   const p = t.home;
   return `
+    <div class="cursor-aura" data-cursor-aura aria-hidden="true"><i></i></div>
     <section class="hero hero--home">
       <div class="hero__copy">
         <p class="eyebrow">${esc(p.heroKicker)}</p>
-        <h1>${esc(p.heroTitle)}</h1>
+        <h1 class="kinetic-title">${kineticTitle(p.heroTitle)}</h1>
         <p class="hero__lead">${esc(p.heroText)}</p>
         <div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div>
         <p class="hero__note">${esc(p.heroNote)}</p>
@@ -70,6 +73,36 @@ function renderHome(lang) {
         ${t.ui.orbitExtras.map((label, index) => `<span class="orbit-chip orbit-chip--${index + 1}"><i></i>${esc(label)}</span>`).join("")}
         <span class="orbit-object orbit-object--cube"></span><span class="orbit-object orbit-object--disc"></span><span class="orbit-object orbit-object--spark"></span>
         <span class="orbit-signal"><i></i>${esc(t.ui.noLockIn)}</span>
+      </div>
+    </section>
+    <section class="capability-marquee" aria-hidden="true"><div>${[...p.journeyTicker, ...p.journeyTicker].map((item) => `<span>${esc(item)}<i></i></span>`).join("")}</div></section>
+    <section class="digital-journey" data-digital-journey>
+      <div class="journey-stage">
+        <div class="journey-copy">
+          <p class="eyebrow">${esc(p.journeyKicker)}</p>
+          <h2>${esc(p.journeyTitle)}</h2>
+          <p>${esc(p.journeyText)}</p>
+          <span class="journey-scroll"><i></i>${esc(p.journeyScroll)}</span>
+        </div>
+        <div class="journey-world" data-journey-world aria-hidden="true">
+          <span class="journey-gridplane"></span><span class="journey-halo"></span>
+          <div class="journey-machine">
+            <span class="journey-platform journey-platform--1"></span><span class="journey-platform journey-platform--2"></span>
+            <div class="journey-cube">
+              <span class="journey-face journey-face--front"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span>
+              <span class="journey-face journey-face--back">CRM</span><span class="journey-face journey-face--right">SEO</span>
+              <span class="journey-face journey-face--left">WEB</span><span class="journey-face journey-face--top">DATA</span><span class="journey-face journey-face--bottom">AI</span>
+            </div>
+            <span class="journey-ring journey-ring--1"></span><span class="journey-ring journey-ring--2"></span><span class="journey-ring journey-ring--3"></span>
+            <span class="journey-satellite journey-satellite--1"><i>01</i>${esc(t.nav.websites)}</span>
+            <span class="journey-satellite journey-satellite--2"><i>02</i>${esc(t.ui.system[0])}</span>
+            <span class="journey-satellite journey-satellite--3"><i>03</i>${esc(t.ui.orbitExtras[2])}</span>
+            <span class="journey-satellite journey-satellite--4"><i>04</i>${esc(t.ui.system[4])}</span>
+            <span class="journey-shard journey-shard--1"></span><span class="journey-shard journey-shard--2"></span><span class="journey-shard journey-shard--3"></span><span class="journey-shard journey-shard--4"></span>
+          </div>
+        </div>
+        <ol class="journey-steps">${p.journeySteps.map(([n, title, text], index) => `<li data-journey-step="${index}"><span>${esc(n)}</span><div><strong>${esc(title)}</strong><p>${esc(text)}</p></div></li>`).join("")}</ol>
+        <div class="journey-progress"><i></i></div>
       </div>
     </section>
     <section class="trust-strip" aria-label="LinkedLab principles">${p.trust.map(([title, text]) => `<div><strong>${esc(title)}</strong><span>${esc(text)}</span></div>`).join("")}</section>
@@ -196,7 +229,7 @@ function schema(lang, key) {
 function html(lang, key) {
   const t = content[lang], meta = pageMeta(lang, key), canonical = `${baseUrl}${paths[lang][key]}`;
   const alternates = site.languages.map((code) => `<link rel="alternate" hreflang="${code}" href="${baseUrl}${paths[code][key]}">`).join("");
-  const intro = key === "home" ? `<div class="site-intro" data-site-intro aria-label="LinkedLab"><div class="site-intro__halo"></div><div class="site-intro__brand"><span><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div><div class="site-intro__line"></div><button type="button" data-skip-intro>${esc(t.ui.skipIntro)}</button></div>` : "";
+  const intro = key === "home" ? `<div class="site-intro" data-site-intro aria-label="LinkedLab"><div class="site-intro__halo"></div><div class="site-intro__shapes"><i></i><i></i><i></i><i></i></div><div class="site-intro__brand"><span><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div><div class="site-intro__line"></div><button type="button" data-skip-intro>${esc(t.ui.skipIntro)}</button></div>` : "";
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script></head><body>${intro}<a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}</body></html>`;
 }
 

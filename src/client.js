@@ -31,6 +31,34 @@ for (const detail of document.querySelectorAll(".faq-list details")) {
 }
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const cursorAura = document.querySelector("[data-cursor-aura]");
+
+if (cursorAura && !reducedMotion.matches && matchMedia("(pointer: fine)").matches) {
+  let cursorX = -100;
+  let cursorY = -100;
+  let cursorTargetX = -100;
+  let cursorTargetY = -100;
+
+  const renderCursor = () => {
+    cursorX += (cursorTargetX - cursorX) * .19;
+    cursorY += (cursorTargetY - cursorY) * .19;
+    cursorAura.style.setProperty("--cursor-x", `${cursorX.toFixed(1)}px`);
+    cursorAura.style.setProperty("--cursor-y", `${cursorY.toFixed(1)}px`);
+    requestAnimationFrame(renderCursor);
+  };
+
+  addEventListener("pointermove", (event) => {
+    cursorTargetX = event.clientX;
+    cursorTargetY = event.clientY;
+    cursorAura.classList.add("is-visible");
+    cursorAura.classList.toggle("is-active", Boolean(event.target instanceof Element && event.target.closest("a, button, .interactive-surface, [data-digital-orbit]")));
+  }, { passive: true });
+  addEventListener("mouseout", (event) => {
+    if (!event.relatedTarget) cursorAura.classList.remove("is-visible");
+  }, { passive: true });
+  requestAnimationFrame(renderCursor);
+}
+
 const intro = document.querySelector("[data-site-intro]");
 
 if (intro) {
@@ -72,7 +100,7 @@ if (intro) {
 }
 
 if (!reducedMotion.matches) {
-  const revealTargets = [...document.querySelectorAll("main > section:not(:first-child), .site-footer > div")];
+  const revealTargets = [...document.querySelectorAll("main > section:not(.hero), .site-footer > div")];
   document.documentElement.classList.add("motion-ready");
   const revealObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -235,4 +263,45 @@ if (orbit && canvas) {
   }).observe(orbit);
   resize();
   requestAnimationFrame(renderOrbit);
+}
+
+const journey = document.querySelector("[data-digital-journey]");
+const journeyWorld = journey?.querySelector("[data-journey-world]");
+
+if (journey && journeyWorld) {
+  const journeySteps = [...journey.querySelectorAll("[data-journey-step]")];
+  let journeyPointerX = 0;
+  let journeyPointerY = 0;
+  let journeyFrame = 0;
+
+  const renderJourney = () => {
+    journeyFrame = 0;
+    const bounds = journey.getBoundingClientRect();
+    const range = Math.max(1, journey.offsetHeight - innerHeight);
+    const progress = Math.max(0, Math.min(1, -bounds.top / range));
+    const activeStep = Math.min(journeySteps.length - 1, Math.floor(progress * journeySteps.length));
+    journey.style.setProperty("--journey-progress", `${(progress * 100).toFixed(1)}%`);
+    journeySteps.forEach((step, index) => step.classList.toggle("is-active", index === activeStep));
+    header?.classList.toggle("site-header--dark", bounds.top <= 82 && bounds.bottom > 82);
+
+    if (!reducedMotion.matches) {
+      journeyWorld.style.setProperty("--world-rx", `${(-13 + progress * 22 - journeyPointerY * 7).toFixed(2)}deg`);
+      journeyWorld.style.setProperty("--world-ry", `${(-24 + progress * 210 + journeyPointerX * 14).toFixed(2)}deg`);
+      journeyWorld.style.setProperty("--world-lift", `${Math.sin(progress * Math.PI * 2) * -18}px`);
+    }
+  };
+
+  const scheduleJourney = () => {
+    if (!journeyFrame) journeyFrame = requestAnimationFrame(renderJourney);
+  };
+
+  journey.addEventListener("pointermove", (event) => {
+    const bounds = journey.getBoundingClientRect();
+    journeyPointerX = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
+    journeyPointerY = Math.max(-1, Math.min(1, (event.clientY / innerHeight - .5) * 2));
+    scheduleJourney();
+  }, { passive: true });
+  addEventListener("scroll", scheduleJourney, { passive: true });
+  addEventListener("resize", scheduleJourney, { passive: true });
+  renderJourney();
 }
