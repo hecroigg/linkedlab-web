@@ -6,7 +6,10 @@ import { site } from "../src/site.config.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
-const baseUrl = (process.env.SITE_URL || "https://linkedlab.pages.dev").replace(/\/$/, "");
+const baseUrl = (
+  process.env.SITE_URL
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab.pages.dev")
+).replace(/\/$/, "");
 
 const pageKeys = ["home", "websites", "systems", "pricing", "process", "projects", "contact", "legal", "privacy"];
 
