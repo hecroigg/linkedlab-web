@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Interactive branded opening sequence on the homepage, with skip and reduced-motion support
+- Additional animated SEO, data, automation and analytics objects in the hero system
+- Cursor-responsive card lighting, subtle tilt and magnetic call-to-action buttons
+- Responsive motion tuning for desktop, tablet and mobile
+
 ## 1.1.0
 
 - New LinkedLab logo across navigation, footer and favicon

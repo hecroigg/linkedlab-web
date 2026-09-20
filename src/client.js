@@ -31,6 +31,45 @@ for (const detail of document.querySelectorAll(".faq-list details")) {
 }
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const intro = document.querySelector("[data-site-intro]");
+
+if (intro) {
+  let introSeen = false;
+  try { introSeen = sessionStorage.getItem("linkedlab-intro-seen") === "1"; } catch {}
+
+  const hideIntro = (immediate = false) => {
+    if (intro.classList.contains("is-exiting") || intro.classList.contains("is-hidden")) return;
+    try { sessionStorage.setItem("linkedlab-intro-seen", "1"); } catch {}
+    document.body.classList.remove("intro-active");
+    if (immediate || reducedMotion.matches) {
+      intro.classList.add("is-hidden");
+      return;
+    }
+    intro.classList.add("is-exiting");
+    setTimeout(() => intro.classList.add("is-hidden"), 1050);
+  };
+
+  if (introSeen || reducedMotion.matches) hideIntro(true);
+  else {
+    document.body.classList.add("intro-active");
+    const introTimer = setTimeout(hideIntro, 1350);
+    intro.addEventListener("pointermove", (event) => {
+      intro.style.setProperty("--intro-x", `${(event.clientX / innerWidth * 100).toFixed(1)}%`);
+      intro.style.setProperty("--intro-y", `${(event.clientY / innerHeight * 100).toFixed(1)}%`);
+    }, { passive: true });
+    intro.querySelector("[data-skip-intro]")?.addEventListener("click", () => {
+      clearTimeout(introTimer);
+      hideIntro();
+    });
+    const escapeIntro = (event) => {
+      if (event.key !== "Escape") return;
+      clearTimeout(introTimer);
+      hideIntro();
+      removeEventListener("keydown", escapeIntro);
+    };
+    addEventListener("keydown", escapeIntro);
+  }
+}
 
 if (!reducedMotion.matches) {
   const revealTargets = [...document.querySelectorAll("main > section:not(:first-child), .site-footer > div")];
@@ -43,6 +82,41 @@ if (!reducedMotion.matches) {
     }
   }, { rootMargin: "0px 0px -8%", threshold: .08 });
   revealTargets.forEach((target) => revealObserver.observe(target));
+
+  if (matchMedia("(pointer: fine)").matches) {
+    const surfaces = document.querySelectorAll(".service-card, .feature-card, .pricing-card, .mini-projects article, .project-art, .contact-card");
+    for (const surface of surfaces) {
+      surface.classList.add("interactive-surface");
+      surface.addEventListener("pointermove", (event) => {
+        const bounds = surface.getBoundingClientRect();
+        const x = (event.clientX - bounds.left) / bounds.width;
+        const y = (event.clientY - bounds.top) / bounds.height;
+        surface.style.setProperty("--glow-x", `${(x * 100).toFixed(1)}%`);
+        surface.style.setProperty("--glow-y", `${(y * 100).toFixed(1)}%`);
+        surface.style.setProperty("--tilt-x", `${((x - .5) * 3.4).toFixed(2)}deg`);
+        surface.style.setProperty("--tilt-y", `${((.5 - y) * 3.4).toFixed(2)}deg`);
+        surface.classList.add("is-active");
+      }, { passive: true });
+      surface.addEventListener("pointerleave", () => {
+        surface.classList.remove("is-active");
+        surface.style.removeProperty("--tilt-x");
+        surface.style.removeProperty("--tilt-y");
+      }, { passive: true });
+    }
+
+    for (const button of document.querySelectorAll(".button")) {
+      button.classList.add("magnetic");
+      button.addEventListener("pointermove", (event) => {
+        const bounds = button.getBoundingClientRect();
+        button.style.setProperty("--magnet-x", `${((event.clientX - bounds.left - bounds.width / 2) * .12).toFixed(1)}px`);
+        button.style.setProperty("--magnet-y", `${((event.clientY - bounds.top - bounds.height / 2) * .16).toFixed(1)}px`);
+      }, { passive: true });
+      button.addEventListener("pointerleave", () => {
+        button.style.setProperty("--magnet-x", "0px");
+        button.style.setProperty("--magnet-y", "0px");
+      }, { passive: true });
+    }
+  }
 
   if (!("startViewTransition" in document)) {
     document.addEventListener("click", (event) => {
