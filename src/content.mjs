@@ -8,7 +8,7 @@ const euro = (value) => new Intl.NumberFormat("de-DE", {
 
 const range = (price) => price.to
   ? `${euro(price.from)}–${euro(price.to)}`
-  : `${euro(price.from)}+`;
+  : `${euro(price.from)}${price.plus ? "+" : ""}`;
 
 const priceTokens = {
   foundingOne: range(site.pricing.founding.onePage),

@@ -11,9 +11,9 @@ export const site = {
   pricing: {
     currency: "EUR",
     founding: {
-      onePage: { from: 349, to: 399 },
-      business: { from: 549, to: 599 },
-      complex: { from: 799 }
+      onePage: { from: 349 },
+      business: { from: 549 },
+      complex: { from: 799, plus: true }
     },
     standard: {
       launch: { from: 499 },

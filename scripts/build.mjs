@@ -30,7 +30,7 @@ const icon = (name) => {
   return icons[name] || "";
 };
 
-const brand = () => `<span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 34 34"><path d="M8 7v19h18"/><circle cx="8" cy="7" r="3"/><circle cx="8" cy="26" r="3"/><circle cx="26" cy="26" r="3"/></svg></span><span><strong>LinkedLab</strong><small>${site.descriptor}</small></span>`;
+const brand = () => `<span class="brand-mark" aria-hidden="true"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><span><strong>LinkedLab</strong><small>${site.descriptor}</small></span>`;
 
 const button = (label, href, variant = "primary", external = false) => `<a class="button button--${variant}" href="${href}"${external ? ' target="_blank" rel="noreferrer"' : ""}>${esc(label)} ${icon(external ? "external" : "arrow")}</a>`;
 
@@ -59,7 +59,16 @@ function renderHome(lang) {
         <div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div>
         <p class="hero__note">${esc(p.heroNote)}</p>
       </div>
-      <div class="hero__visual"><img src="/assets/linkedlab-hero.webp" width="1536" height="1024" alt="" fetchpriority="high"><span class="visual-label visual-label--one">${esc(t.ui.noLockIn)}</span><span class="visual-label visual-label--two">${esc(t.ui.yours)}</span></div>
+      <div class="hero__visual digital-orbit" data-digital-orbit aria-hidden="true">
+        <canvas class="digital-orbit__canvas"></canvas>
+        <span class="orbit-ring orbit-ring--outer"></span><span class="orbit-ring orbit-ring--inner"></span>
+        <div class="orbit-core"><span class="orbit-core__logo"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div>
+        <span class="orbit-node orbit-node--web"><i>01</i><strong>${esc(t.nav.websites)}</strong></span>
+        <span class="orbit-node orbit-node--clients"><i>02</i><strong>${esc(t.ui.system[0])}</strong></span>
+        <span class="orbit-node orbit-node--bookings"><i>03</i><strong>${esc(t.ui.system[1])}</strong></span>
+        <span class="orbit-node orbit-node--data"><i>04</i><strong>${esc(t.ui.system[4])}</strong></span>
+        <span class="orbit-signal"><i></i>${esc(t.ui.noLockIn)}</span>
+      </div>
     </section>
     <section class="trust-strip" aria-label="LinkedLab principles">${p.trust.map(([title, text]) => `<div><strong>${esc(title)}</strong><span>${esc(text)}</span></div>`).join("")}</section>
     <section class="section split-intro"><div>${sectionHead(p.problemKicker, p.problemTitle)}</div><p class="large-copy">${esc(p.problemText)}</p></section>
@@ -185,7 +194,7 @@ function schema(lang, key) {
 function html(lang, key) {
   const t = content[lang], meta = pageMeta(lang, key), canonical = `${baseUrl}${paths[lang][key]}`;
   const alternates = site.languages.map((code) => `<link rel="alternate" hreflang="${code}" href="${baseUrl}${paths[code][key]}">`).join("");
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script></head><body><a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}</body></html>`;
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script></head><body><a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}</body></html>`;
 }
 
 async function write(relative, data) {
@@ -214,6 +223,7 @@ await mkdir(join(dist, "assets"), { recursive: true });
 await cp(join(root, "src", "styles.css"), join(dist, "assets", "styles.css"));
 await cp(join(root, "src", "client.js"), join(dist, "assets", "client.js"));
 await cp(join(root, "public", "favicon.svg"), join(dist, "favicon.svg"));
-await cp(join(root, "public", "assets", "linkedlab-hero.webp"), join(dist, "assets", "linkedlab-hero.webp"));
+await cp(join(root, "public", "assets", "linkedlab-logo-mark.webp"), join(dist, "assets", "linkedlab-logo-mark.webp"));
+await cp(join(root, "public", "assets", "linkedlab-logo-full.webp"), join(dist, "assets", "linkedlab-logo-full.webp"));
 
 console.log(`Built ${site.languages.length * pageKeys.length + 2} HTML pages for ${baseUrl}`);

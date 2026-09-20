@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- New LinkedLab logo across navigation, footer and favicon
+- Interactive digital-system hero with pointer, touch and device motion
+- Page and section transitions with reduced-motion support
+- Founding prices simplified to 349 € and 549 €
+
 ## 1.0.0
 
 - Initial LinkedLab brand and website system
