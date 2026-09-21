@@ -5,7 +5,7 @@ export const site = {
   instagramHandle: "@linked.lab",
   whatsapp: "https://wa.me/34693505546",
   whatsappDisplay: "+34 693 505 546",
-  defaultLanguage: "de",
+  defaultLanguage: "en",
   languages: ["de", "en", "es"],
   serviceAreas: ["Mannheim", "Ludwigshafen", "Rhein-Neckar", "Remote"],
   launchSupportDays: 30,
