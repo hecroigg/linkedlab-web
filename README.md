@@ -7,7 +7,7 @@ Official trilingual website for LinkedLab, a digital studio for small local busi
 - German, English and Spanish routes with German as the default language
 - Centralized content, prices, contact details and trilingual legal pages
 - Static-first architecture with no runtime database or unnecessary client framework
-- Local SEO metadata, canonical URLs, `hreflang`, XML sitemap and structured data
+- Local SEO metadata, canonical URLs, `hreflang`, XML sitemap and structured Data
 - Responsive layouts, keyboard support, reduced-motion support and a custom 404 page
 - Vercel-ready headers, redirects and static output
 - Consent manager with accept, reject and granular settings
