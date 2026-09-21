@@ -11,7 +11,7 @@ Official trilingual website for LinkedLab, a digital studio for small local busi
 - Responsive layouts, keyboard support, reduced-motion support and a custom 404 page
 - Vercel-ready headers, redirects and static output
 - Consent manager with accept, reject and granular settings
-- No analytics or marketing trackers by default
+- Cookie-free Vercel Web Analytics; no advertising or marketing trackers
 
 ## Edit content
 
@@ -61,4 +61,4 @@ The generated site is deployed from `dist` according to `vercel.json`.
 
 ## Privacy
 
-The current build uses one necessary first-party cookie to remember consent for 180 days. It does not load analytics, advertising or marketing trackers. WhatsApp, Instagram and project links are external; no third-party content is embedded.
+The current build uses one necessary first-party cookie to remember consent for 180 days. Vercel Web Analytics may measure traffic without cookies; no optional analytics, advertising or marketing cookies are loaded. WhatsApp, Instagram and project links are external; no third-party content is embedded.

@@ -26,7 +26,9 @@ const icon = (name) => {
     check: '<svg aria-hidden="true" viewBox="0 0 20 20"><path d="m4 10 4 4 8-8"/></svg>',
     external: '<svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7 5h8v8M15 5l-9 9"/></svg>',
     menu: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
-    close: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>'
+    close: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+    whatsapp: '<svg class="brand-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.52 3.48A11.8 11.8 0 0 0 12.12 0C5.56 0 .22 5.34.22 11.9c0 2.1.55 4.16 1.6 5.97L.12 24l6.27-1.64a11.88 11.88 0 0 0 5.72 1.46h.01C18.68 23.82 24 18.48 24 11.92c0-3.18-1.24-6.18-3.48-8.44Zm-8.4 18.33h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.72.98.99-3.63-.24-.37a9.84 9.84 0 1 1 8.39 4.61Zm5.4-7.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47a8.92 8.92 0 0 1-1.65-2.05c-.17-.3-.02-.46.13-.6.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.21 5.1 4.5.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.75-.72 2-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35Z"/></svg>',
+    instagram: '<svg class="brand-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm10.5 1.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>'
   };
   return icons[name] || "";
 };
@@ -180,7 +182,7 @@ function renderContact(lang) {
   }[lang];
   const whatsappUrl = `${site.whatsapp}?text=${encodeURIComponent(whatsappText)}`;
   return `
-    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">W</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true)}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon">@</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
+    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">${icon("whatsapp")}</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true)}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon" aria-hidden="true">${icon("instagram")}</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
     <section class="section message-guide">${sectionHead(t.common.eyebrow, p.messageGuideTitle)}${checklist(p.messageGuide)}</section>`;
 }
 
