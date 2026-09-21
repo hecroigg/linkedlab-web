@@ -2,16 +2,17 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { content, paths } from "../src/content.mjs";
+import { legalContent } from "../src/legal-content.mjs";
 import { site } from "../src/site.config.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const baseUrl = (
   process.env.SITE_URL
-  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab.pages.dev")
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab-web.vercel.app")
 ).replace(/\/$/, "");
 
-const pageKeys = ["home", "websites", "systems", "pricing", "process", "projects", "contact", "legal", "privacy"];
+const pageKeys = ["home", "websites", "systems", "pricing", "process", "projects", "contact", "legal", "privacy", "cookies"];
 
 const esc = (value = "") => String(value)
   .replaceAll("&", "&amp;")
@@ -172,33 +173,61 @@ function renderProjects(lang) {
 
 function renderContact(lang) {
   const t = content[lang], p = t.contact;
+  const whatsappText = {
+    de: "Hallo, ich möchte über eine Website oder ein digitales System für mein Unternehmen sprechen.",
+    en: "Hi, I would like to talk about a website or digital system for my business.",
+    es: "Hola, me gustaría hablar sobre una página web o un sistema digital para mi negocio."
+  }[lang];
+  const whatsappUrl = `${site.whatsapp}?text=${encodeURIComponent(whatsappText)}`;
   return `
-    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p></div><article class="contact-card"><span class="contact-icon">@</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></section>
+    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">W</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true)}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon">@</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
     <section class="section message-guide">${sectionHead(t.common.eyebrow, p.messageGuideTitle)}${checklist(p.messageGuide)}</section>`;
 }
 
-function renderLegal(lang, privacy = false) {
-  const t = content[lang];
-  const title = privacy ? t.legal.privacyTitle : t.legal.title;
-  const intro = privacy ? t.legal.privacyIntro : t.legal.intro;
+function legalDetails(kind, lang) {
   const legal = site.legal;
-  const copy = {
-    de: { warning: "PLATZHALTER · Vor Veröffentlichung vervollständigen", details: "Angaben zum Unternehmen", tax: "Steuerangaben", liability: "Haftung für Inhalte und Links", liabilityText: "Die endgültige Fassung ist anhand der tatsächlichen Unternehmensform, Leistungen und externen Links rechtlich zu prüfen. LinkedLab bietet keine Rechtsberatung.", controller: "Verantwortliche Stelle", hosting: "Technische Bereitstellung", hostingText: "Diese statische Website ist für Cloudflare Pages vorbereitet. Vor Veröffentlichung sind Hosting-Vertrag, Server-Logs, Auftragsverarbeitung und Datenübermittlungen in der finalen Erklärung korrekt abzubilden.", contact: "Kontaktaufnahme", contactText: "Wenn Sie LinkedLab über Instagram oder einen später eingerichteten E-Mail-Kanal kontaktieren, werden die von Ihnen übermittelten Angaben zur Bearbeitung der Anfrage verarbeitet. Die tatsächlichen Kontaktwege und Löschfristen sind vor Veröffentlichung zu ergänzen.", analytics: "Analytics und Cookies", analyticsText: "In der aktuellen Fassung sind keine Analyse- oder Marketing-Tracker eingebaut. Falls später zustimmungspflichtige Dienste ergänzt werden, müssen Einwilligungsverwaltung und Erklärung entsprechend aktualisiert werden.", rights: "Ihre Rechte", rightsText: "Die endgültige Fassung muss die anwendbaren Rechte, zuständige Aufsichtsbehörde und Kontaktwege passend zur tatsächlichen Unternehmenssituation enthalten. LinkedLab bietet keine Rechtsberatung." },
-    en: { warning: "PLACEHOLDER · Complete before publication", details: "Business details", tax: "Tax details", liability: "Liability for content and links", liabilityText: "The final version must be reviewed against the actual business structure, services and external links. LinkedLab does not provide legal advice.", controller: "Data controller", hosting: "Technical hosting", hostingText: "This static website is prepared for Cloudflare Pages. Before publication, the hosting agreement, server logs, data processing and international transfers must be described accurately in the final policy.", contact: "Contacting LinkedLab", contactText: "If you contact LinkedLab through Instagram or a future email channel, the information you provide will be processed to handle the enquiry. The actual contact channels and retention periods must be added before publication.", analytics: "Analytics and cookies", analyticsText: "The current version includes no analytics or marketing trackers. If services requiring consent are added later, the consent management and this policy must be updated accordingly.", rights: "Your rights", rightsText: "The final version must include the applicable rights, supervisory authority and contact routes for the actual business situation. LinkedLab does not provide legal advice." },
-    es: { warning: "BORRADOR · Completar antes de publicar", details: "Datos del negocio", tax: "Datos fiscales", liability: "Responsabilidad sobre contenidos y enlaces", liabilityText: "La versión final debe revisarse según la forma jurídica, los servicios y los enlaces externos reales. LinkedLab no ofrece asesoramiento jurídico.", controller: "Responsable del tratamiento", hosting: "Alojamiento técnico", hostingText: "Esta web estática está preparada para Cloudflare Pages. Antes de publicar, la política final debe describir correctamente el contrato de alojamiento, los registros del servidor, el tratamiento de datos y las posibles transferencias internacionales.", contact: "Contacto con LinkedLab", contactText: "Si contactas con LinkedLab por Instagram o mediante un futuro canal de email, los datos enviados se tratarán para responder a la solicitud. Antes de publicar deben añadirse los canales reales y los plazos de conservación.", analytics: "Analítica y cookies", analyticsText: "La versión actual no incluye analítica ni rastreadores de marketing. Si más adelante se añaden servicios que requieren consentimiento, habrá que actualizar la gestión de consentimiento y esta política.", rights: "Tus derechos", rightsText: "La versión final debe incluir los derechos aplicables, la autoridad de control y las vías de contacto correspondientes a la situación real del negocio. LinkedLab no ofrece asesoramiento jurídico." }
-  }[lang];
-  if (!privacy) return `<section class="legal-page">${sectionHead("LinkedLab", title, intro, 1)}<div class="legal-warning">${esc(copy.warning)}</div><h2>${esc(copy.details)}</h2><p><strong>${esc(legal.ownerName)}</strong><br>${esc(legal.address)}<br>${esc(legal.email)}<br>${esc(legal.phone)}</p><h2>${esc(copy.tax)}</h2><p>${esc(legal.taxId)}</p><h2>${esc(copy.liability)}</h2><p>${esc(copy.liabilityText)}</p></section>`;
-  return `<section class="legal-page">${sectionHead("LinkedLab", title, intro, 1)}<div class="legal-warning">${esc(copy.warning)}</div><h2>${esc(copy.controller)}</h2><p>${esc(legal.ownerName)}<br>${esc(legal.address)}<br>${esc(legal.email)}</p><h2>${esc(copy.hosting)}</h2><p>${esc(copy.hostingText)}</p><h2>${esc(copy.contact)}</h2><p>${esc(copy.contactText)}</p><h2>${esc(copy.analytics)}</h2><p>${esc(copy.analyticsText)}</p><h2>${esc(copy.rights)}</h2><p>${esc(copy.rightsText)}</p></section>`;
+  const countries = { de: "Deutschland", en: "Germany", es: "Alemania" };
+  const address = [...legal.addressLines.slice(0, -1), countries[lang]].map(esc).join("<br>");
+  if (kind === "contact" || kind === "controller") return `<address><strong>${esc(legal.ownerName)}</strong><br>${esc(legal.tradingName)}<br>${address}<br><a href="mailto:${esc(legal.email)}">${esc(legal.email)}</a><br><a href="tel:+34693505546">${esc(legal.phone)}</a></address>`;
+  if (kind === "registration") {
+    const registration = {
+      de: ["Angebot durch eine natürliche Person; derzeit nicht im Handelsregister eingetragen.", "Keine Handelsregisternummer vorhanden.", "Keine Umsatzsteuer-Identifikationsnummer erteilt."],
+      en: ["Service currently provided by an individual; not entered in the commercial register.", "No commercial register number.", "No VAT identification number has been issued."],
+      es: ["Servicio ofrecido actualmente por una persona física; no inscrita en el registro mercantil.", "Sin número de registro mercantil.", "No se ha asignado un número de IVA intracomunitario."]
+    }[lang];
+    return `<p>${registration.map(esc).join("<br>")}</p>`;
+  }
+  if (kind === "responsible") return `<p>${esc(legal.ownerName)}<br>${address}</p>`;
+  if (kind === "cookieTable") {
+    const labels = {
+      de: ["Cookie", "Anbieter", "Zweck", "Kategorie", "Dauer", "linkedlab_consent", "LinkedLab", "Speichert Ablehnung, Zustimmung und ausgewählte Kategorien", "Notwendig", "180 Tage"],
+      en: ["Cookie", "Provider", "Purpose", "Category", "Duration", "linkedlab_consent", "LinkedLab", "Stores rejection, consent and selected categories", "Necessary", "180 days"],
+      es: ["Cookie", "Proveedor", "Finalidad", "Categoría", "Duración", "linkedlab_consent", "LinkedLab", "Guarda el rechazo, consentimiento y categorías seleccionadas", "Necesaria", "180 días"]
+    }[lang];
+    return `<div class="legal-table-wrap"><table class="legal-table"><thead><tr>${labels.slice(0, 5).map((label) => `<th>${esc(label)}</th>`).join("")}</tr></thead><tbody><tr>${labels.slice(5).map((label) => `<td>${esc(label)}</td>`).join("")}</tr></tbody></table></div>`;
+  }
+  return "";
+}
+
+function renderLegal(lang, key) {
+  const t = content[lang];
+  const titles = { legal: t.legal.title, privacy: t.legal.privacyTitle, cookies: t.legal.cookiesTitle };
+  const intros = { legal: t.legal.intro, privacy: t.legal.privacyIntro, cookies: t.legal.cookiesIntro };
+  const document = legalContent[lang][key];
+  const sections = document.sections.map((section) => `<section class="legal-section"><h2>${esc(section.title)}</h2>${section.kind ? legalDetails(section.kind, lang) : section.paragraphs.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("")}</section>`).join("");
+  const resources = key === "privacy" ? `<aside class="legal-resources"><strong>${lang === "de" ? "Weiterführende Informationen" : lang === "es" ? "Información adicional" : "Further information"}</strong><a href="https://vercel.com/legal/privacy-notice" target="_blank" rel="noreferrer">Vercel Privacy Notice ${icon("external")}</a><a href="https://vercel.com/legal/dpa" target="_blank" rel="noreferrer">Vercel Data Processing Addendum ${icon("external")}</a><a href="https://www.baden-wuerttemberg.datenschutz.de/" target="_blank" rel="noreferrer">LfDI Baden-Württemberg ${icon("external")}</a></aside>` : "";
+  return `<article class="legal-page">${sectionHead("LinkedLab", titles[key], intros[key], 1)}<p class="legal-updated">${esc(legalContent[lang].updated)}</p>${sections}${resources}</article>`;
 }
 
 function renderBody(lang, key) {
-  return ({ home: renderHome, websites: renderWebsites, systems: renderSystems, pricing: renderPricing, process: renderProcess, projects: renderProjects, contact: renderContact, legal: (l) => renderLegal(l, false), privacy: (l) => renderLegal(l, true) })[key](lang);
+  return ({ home: renderHome, websites: renderWebsites, systems: renderSystems, pricing: renderPricing, process: renderProcess, projects: renderProjects, contact: renderContact, legal: (l) => renderLegal(l, "legal"), privacy: (l) => renderLegal(l, "privacy"), cookies: (l) => renderLegal(l, "cookies") })[key](lang);
 }
 
 function pageMeta(lang, key) {
   const t = content[lang];
   if (key === "legal") return { title: `${t.legal.title} | LinkedLab`, description: t.legal.intro };
   if (key === "privacy") return { title: `${t.legal.privacyTitle} | LinkedLab`, description: t.legal.privacyIntro };
+  if (key === "cookies") return { title: `${t.legal.cookiesTitle} | LinkedLab`, description: t.legal.cookiesIntro };
   return { title: t[key].seoTitle, description: t[key].seoDescription };
 }
 
@@ -211,7 +240,12 @@ function header(lang, key) {
 
 function footer(lang) {
   const t = content[lang], p = paths[lang];
-  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong><a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
+  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong><a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a><a href="${p.cookies}">${esc(t.footer.cookies)}</a><button class="footer-cookie-button" type="button" data-cookie-settings>${esc(t.footer.cookieSettings)}</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
+}
+
+function cookieConsent(lang) {
+  const c = content[lang].cookieConsent;
+  return `<div class="cookie-banner" data-cookie-banner hidden><div><span class="cookie-banner__mark" aria-hidden="true">◌</span><div><strong>${esc(c.title)}</strong><p>${esc(c.text)} <a href="${paths[lang].cookies}">${esc(content[lang].footer.cookies)}</a></p></div></div><div class="cookie-banner__actions"><button class="cookie-action cookie-action--secondary" type="button" data-cookie-reject>${esc(c.reject)}</button><button class="cookie-action cookie-action--secondary" type="button" data-cookie-manage>${esc(c.manage)}</button><button class="cookie-action cookie-action--primary" type="button" data-cookie-accept>${esc(c.accept)}</button></div></div><div class="cookie-modal" data-cookie-modal hidden><div class="cookie-modal__backdrop" data-cookie-close></div><section class="cookie-dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-title"><button class="cookie-dialog__close" type="button" data-cookie-close aria-label="${esc(c.close)}">×</button><p class="eyebrow">LinkedLab</p><h2 id="cookie-title">${esc(c.preferencesTitle)}</h2><p>${esc(c.preferencesText)}</p><div class="cookie-options"><div class="cookie-option"><div><strong>${esc(c.necessary)}</strong><p>${esc(c.necessaryText)}</p></div><span>${esc(c.always)}</span></div><label class="cookie-option"><div><strong>${esc(c.analytics)}</strong><p>${esc(c.analyticsText)}</p></div><input type="checkbox" data-cookie-category="analytics"><i aria-hidden="true"></i></label><label class="cookie-option"><div><strong>${esc(c.marketing)}</strong><p>${esc(c.marketingText)}</p></div><input type="checkbox" data-cookie-category="marketing"><i aria-hidden="true"></i></label></div><div class="cookie-dialog__actions"><button class="cookie-action cookie-action--secondary" type="button" data-cookie-reject>${esc(c.reject)}</button><button class="cookie-action cookie-action--primary" type="button" data-cookie-save>${esc(c.save)}</button></div></section></div>`;
 }
 
 function schema(lang, key) {
@@ -230,7 +264,7 @@ function html(lang, key) {
   const t = content[lang], meta = pageMeta(lang, key), canonical = `${baseUrl}${paths[lang][key]}`;
   const alternates = site.languages.map((code) => `<link rel="alternate" hreflang="${code}" href="${baseUrl}${paths[code][key]}">`).join("");
   const intro = key === "home" ? `<div class="site-intro" data-site-intro aria-label="LinkedLab"><div class="site-intro__halo"></div><div class="site-intro__shapes"><i></i><i></i><i></i><i></i></div><div class="site-intro__brand"><span><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div><div class="site-intro__line"></div><button type="button" data-skip-intro>${esc(t.ui.skipIntro)}</button></div>` : "";
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script></head><body>${intro}<a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}</body></html>`;
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script></head><body>${intro}<a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}${cookieConsent(lang)}</body></html>`;
 }
 
 async function write(relative, data) {

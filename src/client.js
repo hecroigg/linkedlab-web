@@ -62,12 +62,11 @@ if (cursorAura && !reducedMotion.matches && matchMedia("(pointer: fine)").matche
 const intro = document.querySelector("[data-site-intro]");
 
 if (intro) {
-  let introSeen = false;
-  try { introSeen = sessionStorage.getItem("linkedlab-intro-seen") === "1"; } catch {}
+  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
+  const skipRepeatedIntro = navigationType === "reload" || navigationType === "back_forward";
 
   const hideIntro = (immediate = false) => {
     if (intro.classList.contains("is-exiting") || intro.classList.contains("is-hidden")) return;
-    try { sessionStorage.setItem("linkedlab-intro-seen", "1"); } catch {}
     document.body.classList.remove("intro-active");
     if (immediate || reducedMotion.matches) {
       intro.classList.add("is-hidden");
@@ -77,7 +76,7 @@ if (intro) {
     setTimeout(() => intro.classList.add("is-hidden"), 1050);
   };
 
-  if (introSeen || reducedMotion.matches) hideIntro(true);
+  if (skipRepeatedIntro || reducedMotion.matches) hideIntro(true);
   else {
     document.body.classList.add("intro-active");
     const introTimer = setTimeout(hideIntro, 1350);
@@ -98,6 +97,62 @@ if (intro) {
     addEventListener("keydown", escapeIntro);
   }
 }
+
+const consentCookieName = "linkedlab_consent";
+const cookieBanner = document.querySelector("[data-cookie-banner]");
+const cookieModal = document.querySelector("[data-cookie-modal]");
+const consentInputs = [...document.querySelectorAll("[data-cookie-category]")];
+let lastCookieFocus = null;
+
+const readConsent = () => {
+  const raw = document.cookie.split("; ").find((item) => item.startsWith(`${consentCookieName}=`))?.split("=").slice(1).join("=");
+  if (!raw) return null;
+  try { return JSON.parse(decodeURIComponent(raw)); } catch { return null; }
+};
+
+const writeConsent = (analytics, marketing) => {
+  const consent = { necessary: true, analytics, marketing, updated: new Date().toISOString() };
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${consentCookieName}=${encodeURIComponent(JSON.stringify(consent))}; Path=/; Max-Age=15552000; SameSite=Lax${secure}`;
+  cookieBanner?.setAttribute("hidden", "");
+  cookieModal?.setAttribute("hidden", "");
+  document.body.classList.remove("cookie-modal-open");
+  window.dispatchEvent(new CustomEvent("linkedlab:consent", { detail: consent }));
+  lastCookieFocus?.focus();
+};
+
+const openCookieModal = (source) => {
+  if (!cookieModal) return;
+  lastCookieFocus = source || document.activeElement;
+  const consent = readConsent();
+  for (const input of consentInputs) input.checked = Boolean(consent?.[input.dataset.cookieCategory]);
+  cookieModal.removeAttribute("hidden");
+  document.body.classList.add("cookie-modal-open");
+  cookieModal.querySelector(".cookie-dialog__close")?.focus();
+};
+
+const closeCookieModal = () => {
+  cookieModal?.setAttribute("hidden", "");
+  document.body.classList.remove("cookie-modal-open");
+  lastCookieFocus?.focus();
+};
+
+if (cookieBanner && !readConsent()) {
+  cookieBanner.removeAttribute("hidden");
+  requestAnimationFrame(() => cookieBanner.classList.add("is-visible"));
+}
+
+document.querySelectorAll("[data-cookie-accept]").forEach((control) => control.addEventListener("click", () => writeConsent(true, true)));
+document.querySelectorAll("[data-cookie-reject]").forEach((control) => control.addEventListener("click", () => writeConsent(false, false)));
+document.querySelectorAll("[data-cookie-manage], [data-cookie-settings]").forEach((control) => control.addEventListener("click", () => openCookieModal(control)));
+document.querySelectorAll("[data-cookie-close]").forEach((control) => control.addEventListener("click", closeCookieModal));
+document.querySelector("[data-cookie-save]")?.addEventListener("click", () => {
+  const choices = Object.fromEntries(consentInputs.map((input) => [input.dataset.cookieCategory, input.checked]));
+  writeConsent(Boolean(choices.analytics), Boolean(choices.marketing));
+});
+addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && cookieModal && !cookieModal.hidden) closeCookieModal();
+});
 
 if (!reducedMotion.matches) {
   const revealTargets = [...document.querySelectorAll("main > section:not(.hero), .site-footer > div")];

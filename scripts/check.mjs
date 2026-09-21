@@ -23,6 +23,6 @@ for (const file of htmlFiles) {
     catch { errors.push(`${file}: broken local reference ${target}`); }
   }
 }
-if (htmlFiles.length !== 29) errors.push(`Expected 29 HTML files, found ${htmlFiles.length}`);
+if (htmlFiles.length !== 32) errors.push(`Expected 32 HTML files, found ${htmlFiles.length}`);
 if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
 console.log(`Checked ${htmlFiles.length} HTML files: OK`);

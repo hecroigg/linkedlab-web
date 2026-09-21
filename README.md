@@ -5,11 +5,12 @@ Official trilingual website for LinkedLab, a digital studio for small local busi
 ## What is included
 
 - German, English and Spanish routes with German as the default language
-- Centralized content, prices, contact details and legal placeholders
+- Centralized content, prices, contact details and trilingual legal pages
 - Static-first architecture with no runtime database or unnecessary client framework
 - Local SEO metadata, canonical URLs, `hreflang`, XML sitemap and structured data
 - Responsive layouts, keyboard support, reduced-motion support and a custom 404 page
-- Cloudflare Pages headers and redirects
+- Vercel-ready headers, redirects and static output
+- Consent manager with accept, reject and granular settings
 - No analytics or marketing trackers by default
 
 ## Edit content
@@ -39,7 +40,7 @@ npm run check
 
 The static output is written to `dist/`.
 
-## Cloudflare Pages
+## Vercel
 
 Use these project settings:
 
@@ -49,16 +50,15 @@ Use these project settings:
 - Environment variable: `SITE_URL` with the deployed origin, without a trailing slash
 - Node.js version: `20`
 
-The generated `dist/_headers` and `dist/_redirects` files are recognized by Cloudflare Pages.
+The generated site is deployed from `dist` according to `vercel.json`.
 
 ## Before production launch
 
-1. Replace every clearly marked value in `site.legal` inside `src/site.config.mjs`.
-2. Confirm the actual business/legal form and obtain appropriate legal review for the legal notice and privacy policy.
-3. Add a business email or other direct contact channel if desired.
-4. Set `SITE_URL` to the final custom domain and rebuild.
-5. Only add a consent banner if analytics or another service requiring consent is introduced.
+1. Confirm the legal owner name and business status in `src/site.config.mjs`.
+2. Obtain professional legal review when the business structure or services change.
+3. Set `SITE_URL` to the final custom domain and rebuild.
+4. Update the consent loader and legal pages before adding analytics or marketing services.
 
 ## Privacy
 
-The current build uses no analytics, advertising or marketing trackers and sets no non-essential cookies. It links externally to Instagram and the Lluna Blanca project; no third-party content is embedded.
+The current build uses one necessary first-party cookie to remember consent for 180 days. It does not load analytics, advertising or marketing trackers. WhatsApp, Instagram and project links are external; no third-party content is embedded.

@@ -3,6 +3,8 @@ export const site = {
   descriptor: "Websites & Digital Systems",
   instagram: "https://www.instagram.com/linked.lab/",
   instagramHandle: "@linked.lab",
+  whatsapp: "https://wa.me/34693505546",
+  whatsappDisplay: "+34 693 505 546",
   defaultLanguage: "de",
   languages: ["de", "en", "es"],
   serviceAreas: ["Mannheim", "Ludwigshafen", "Rhein-Neckar", "Remote"],
@@ -23,11 +25,14 @@ export const site = {
     care: { monthly: 29 }
   },
   legal: {
-    ownerName: "[LEGAL_OWNER_NAME]",
-    address: "[LEGAL_ADDRESS]",
-    email: "[BUSINESS_EMAIL]",
-    phone: "[PUBLIC_PHONE_IF_USED]",
-    taxId: "[TAX_DATA_IF_REQUIRED]"
+    ownerName: "Héctor Fàbrega Roig",
+    tradingName: "LinkedLab",
+    addressLines: ["B 7, 17", "68159 Mannheim", "Deutschland"],
+    email: "linkedlab.info@gmail.com",
+    phone: "+34 693 505 546",
+    legalForm: "Nicht im Handelsregister eingetragener Einzelanbieter",
+    taxId: "Keine Umsatzsteuer-Identifikationsnummer erteilt",
+    register: "Kein Handelsregistereintrag"
   }
 };
 
