@@ -18,6 +18,8 @@ for (const file of htmlFiles) {
   if (/href="undefined|src="undefined/.test(html)) errors.push(`${file}: undefined link`);
   const localTargets = [...html.matchAll(/(?:href|src)="(\/[^"]+)"/g)].map((match) => match[1].split(/[?#]/)[0]);
   for (const target of localTargets) {
+    // Skip Vercel-provided paths that only exist in production
+    if (target.startsWith("/_vercel/")) continue;
     const relative = target === "/" ? "index.html" : target.endsWith("/") ? `${target.slice(1)}index.html` : target.slice(1);
     try { await access(join(root, relative)); }
     catch { errors.push(`${file}: broken local reference ${target}`); }
