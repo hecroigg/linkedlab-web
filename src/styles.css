@@ -383,10 +383,14 @@ body.intro-active { overflow: hidden; }
 .project-list > article { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; padding: 3rem 0; border-bottom: 1px solid var(--line); }
 .project-art { display: flex; min-height: 30rem; flex-direction: column; justify-content: space-between; padding: 2rem; color: var(--white); background: linear-gradient(145deg,#112a4c,#071426); border-radius: var(--radius-lg); }
 .project-art--2 { color: #302b19; background: radial-gradient(circle at 75% 25%,rgba(255,255,255,.6),transparent 25%),linear-gradient(145deg,#f4efdd,#ceb875); }
+.project-art--3 { position: relative; overflow: hidden; background: radial-gradient(circle at 78% 22%,rgba(255,174,92,.42),transparent 24%),linear-gradient(145deg,#342014,#120d0a 68%); }
+.project-art--3::after { position: absolute; right: -12%; bottom: 18%; width: 70%; height: 1px; content: ""; background: rgba(255,255,255,.4); box-shadow: 0 -3.5rem rgba(255,255,255,.16), 0 3.5rem rgba(255,255,255,.12); transform: rotate(-18deg); }
+.project-art--3 > * { position: relative; z-index: 1; }
 .project-art span { font-size: .75rem; font-weight: 800; }
 .project-art strong { font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: .9; letter-spacing: -.065em; }
 .project-copy > p:not(.eyebrow) { font-size: 1.1rem; line-height: 1.7; }
 .text-link { display: inline-flex; align-items: center; gap: .4rem; color: var(--blue); font-weight: 750; }
+.project-link { margin-top: 1.25rem; }
 .portfolio-note { max-width: 35rem; margin: 2rem auto 0; text-align: center; }
 
 .contact-hero { display: grid; width: min(calc(100% - 2.5rem), var(--max)); min-height: calc(100vh - 5rem); grid-template-columns: .92fr 1.08fr; gap: clamp(3rem, 6vw, 6rem); align-items: center; margin: 0 auto; padding: 4rem 0 6rem; }

@@ -168,8 +168,8 @@ function renderProcess(lang) {
 function renderProjects(lang) {
   const t = content[lang], p = t.projects;
   return `
-    <section class="hero hero--inner"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="project-count"><strong>02</strong><span>${esc(t.ui.selectedProjects)}</span></div></section>
-    <section class="section project-list">${p.items.map(([name, type, text, status], index) => `<article><div class="project-art project-art--${index + 1}"><span>${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong></div><div class="project-copy"><span class="pill pill--subtle">${esc(status)}</span><p class="eyebrow">${esc(type)}</p><h2>${esc(name)}</h2><p>${esc(text)}</p>${index === 1 ? '<a class="text-link" href="https://llunablancablanes.com" target="_blank" rel="noreferrer">llunablancablanes.com '+icon("external")+'</a>' : ""}</div></article>`).join("")}<p class="portfolio-note">${esc(p.note)}</p></section>
+    <section class="hero hero--inner"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="project-count"><strong>${String(p.items.length).padStart(2, "0")}</strong><span>${esc(t.ui.selectedProjects)}</span></div></section>
+    <section class="section project-list">${p.items.map(([name, type, text, status, url, linkLabel], index) => `<article><div class="project-art project-art--${index + 1}"><span>${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong></div><div class="project-copy"><span class="pill pill--subtle">${esc(status)}</span><p class="eyebrow">${esc(type)}</p><h2>${esc(name)}</h2><p>${esc(text)}</p>${url ? `<a class="button button--outline project-link" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(linkLabel)} ${icon("external")}</a>` : ""}</div></article>`).join("")}<p class="portfolio-note">${esc(p.note)}</p></section>
     ${cta(lang, p.finalTitle)}`;
 }
 
