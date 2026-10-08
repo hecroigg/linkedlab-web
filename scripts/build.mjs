@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { content, paths } from "../src/content.mjs";
 import { legalContent } from "../src/legal-content.mjs";
+import { partnerContent } from "../src/partner-content.mjs";
 import { site } from "../src/site.config.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -12,7 +13,7 @@ const baseUrl = (
   || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab-web.vercel.app")
 ).replace(/\/$/, "");
 
-const pageKeys = ["home", "websites", "systems", "pricing", "process", "projects", "contact", "legal", "privacy", "cookies"];
+const pageKeys = ["home", "websites", "systems", "pricing", "process", "projects", "partners", "contact", "legal", "privacy", "cookies"];
 
 const esc = (value = "") => String(value)
   .replaceAll("&", "&amp;")
@@ -35,7 +36,7 @@ const icon = (name) => {
 
 const brand = () => `<span class="brand-mark" aria-hidden="true"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><span><strong>LinkedLab</strong><small>${site.descriptor}</small></span>`;
 
-const button = (label, href, variant = "primary", external = false) => `<a class="button button--${variant}" href="${href}"${external ? ' target="_blank" rel="noreferrer"' : ""}>${esc(label)} ${icon(external ? "external" : "arrow")}</a>`;
+const button = (label, href, variant = "primary", external = false, attributes = "") => `<a class="button button--${variant}" href="${href}"${external ? ' target="_blank" rel="noreferrer"' : ""}${attributes}>${esc(label)} ${icon(external ? "external" : "arrow")}</a>`;
 
 const tags = (items) => `<ul class="tag-list">${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
 
@@ -121,6 +122,7 @@ function renderHome(lang) {
     <section class="section price-preview"><div>${sectionHead(t.nav.pricing, p.priceTitle, p.priceText)}<div class="button-row">${button(t.common.secondaryCta, paths[lang].pricing)}${button(t.common.talk, paths[lang].contact, "outline")}</div></div><div class="price-lockup"><span>${esc(t.common.founding)}</span><strong>${esc(site.pricing.founding.onePage.from)}€</strong><small>${esc(t.common.from)}</small></div></section>
     <section class="section section--navy process-preview">${sectionHead(t.nav.process, p.processTitle)}<ol class="process-list">${p.process.map(([n, title, text]) => `<li><span>${n}</span><div><h3>${esc(title)}</h3><p>${esc(text)}</p></div></li>`).join("")}</ol>${button(t.nav.process, paths[lang].process, "light")}</section>
     <section class="section work-preview"><div>${sectionHead(t.nav.projects, p.workTitle, p.workText)}${button(t.nav.projects, paths[lang].projects, "outline")}</div><div class="mini-projects"><article><span>01</span><strong>LinkedLab</strong><small>${esc(t.ui.projectTypes[0])}</small></article><article class="mini-projects__lluna"><span>02</span><strong>Lluna Blanca</strong><small>${esc(t.ui.projectTypes[1])}</small></article></div></section>
+    <section class="section partner-teaser"><div>${sectionHead(t.nav.partners, p.partnerTitle, p.partnerText)}</div><div class="partner-teaser__value"><strong>50 €</strong><span>${esc(lang === "de" ? "pro bestätigtem Neukunden" : lang === "es" ? "por nuevo cliente confirmado" : "per confirmed new client")}</span>${button(p.partnerCta, paths[lang].partners, "outline")}</div></section>
     ${cta(lang, p.finalTitle, p.finalText)}`;
 }
 
@@ -169,8 +171,28 @@ function renderProjects(lang) {
   const t = content[lang], p = t.projects;
   return `
     <section class="hero hero--inner"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="project-count"><strong>${String(p.items.length).padStart(2, "0")}</strong><span>${esc(t.ui.selectedProjects)}</span></div></section>
-    <section class="section project-list">${p.items.map(([name, type, text, status, url, linkLabel], index) => `<article><div class="project-art project-art--${index + 1}"><span>${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong></div><div class="project-copy"><span class="pill pill--subtle">${esc(status)}</span><p class="eyebrow">${esc(type)}</p><h2>${esc(name)}</h2><p>${esc(text)}</p>${url ? `<a class="button button--outline project-link" href="${esc(url)}" target="_blank" rel="noreferrer">${esc(linkLabel)} ${icon("external")}</a>` : ""}</div></article>`).join("")}</section>
+    <section class="section project-grid">${p.items.map(([name, type, text, status, url, linkLabel, kind], index) => {
+      const href = url || paths[lang].home;
+      const external = Boolean(url);
+      const domain = external ? new URL(url).hostname.replace(/^www\./, "") : "linkedlab.eu";
+      return `<article class="project-card project-card--${index + 1}" data-project-card><div class="project-preview project-preview--${index + 1}" aria-hidden="true"><div class="project-preview__chrome"><i></i><i></i><i></i><span>${esc(domain)}</span></div><div class="project-preview__screen"><span class="project-preview__number">${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong><div class="project-preview__layout"><i></i><i></i><i></i></div></div></div><div class="project-card__body"><div class="project-card__meta"><span class="project-status project-status--${kind || "live"}">${esc(status)}</span><span>${esc(type)}</span></div><h2>${esc(name)}</h2><p>${esc(text)}</p><a class="button button--text project-link" href="${esc(href)}"${external ? ' target="_blank" rel="noreferrer"' : ""}>${esc(linkLabel)} ${icon(external ? "external" : "arrow")}</a></div></article>`;
+    }).join("")}</section>
     ${cta(lang, p.finalTitle)}`;
+}
+
+function renderPartners(lang) {
+  const t = content[lang], p = partnerContent[lang];
+  const action = "https://formsubmit.co/linkedlab.info@gmail.com";
+  const next = `https://linkedlab.eu${paths[lang].partners}?application=sent`;
+  return `
+    <section class="hero partners-hero"><div class="partners-hero__copy"><p class="eyebrow">${esc(p.kicker)}</p><h1>${esc(p.title)}</h1><p class="hero__lead">${esc(p.intro)}</p><div class="button-row">${button(p.primaryCta, "#partner-application")}${button(p.secondaryCta, "#how-partners", "ghost")}</div></div><div class="partner-network" aria-hidden="true"><span class="partner-network__core"><strong>50 €</strong><small>LinkedLab</small></span><span class="partner-network__node partner-network__node--1">01</span><span class="partner-network__node partner-network__node--2">02</span><span class="partner-network__node partner-network__node--3">03</span><span class="partner-network__node partner-network__node--4">04</span><i></i><i></i><i></i></div></section>
+    <section class="partner-metrics" aria-label="${esc(p.kicker)}">${p.metrics.map(([value, label]) => `<div><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join("")}</section>
+    <section class="section partners-process" id="how-partners">${sectionHead(p.howKicker, p.howTitle, p.howText)}<ol>${p.steps.map(([number, title, text]) => `<li><span>${esc(number)}</span><div><h3>${esc(title)}</h3><p>${esc(text)}</p></div></li>`).join("")}</ol></section>
+    <section class="section partner-calculator"><div>${sectionHead(p.calculatorKicker, p.calculatorTitle, p.calculatorText)}<p class="note-box">${esc(p.calculatorNote)}</p></div><div class="partner-calculator__panel"><label for="partner-clients">${esc(p.clientsLabel)} <output for="partner-clients" data-partner-clients>3</output></label><input id="partner-clients" type="range" min="1" max="10" value="3" step="1" data-partner-range><div class="partner-calculator__scale"><span>1</span><span>10</span></div><div class="partner-calculator__result"><span>${esc(p.earningsLabel)}</span><output for="partner-clients" data-partner-earnings>150 €</output></div></div></section>
+    <section class="section section--soft partner-audience">${sectionHead(p.audienceKicker, p.audienceTitle, p.audienceText)}<div class="partner-profile-grid">${p.profiles.map(([title, text], index) => `<article><span>${String(index + 1).padStart(2, "0")}</span><h3>${esc(title)}</h3><p>${esc(text)}</p></article>`).join("")}</div></section>
+    <section class="section partner-application" id="partner-application"><div class="partner-application__intro">${sectionHead(p.formKicker, p.formTitle, p.formText)}<div class="partner-terms"><h3>${esc(p.termsTitle)}</h3>${checklist(p.terms)}</div></div><form class="partner-form" action="${action}" method="POST" data-partner-form><input type="hidden" name="_subject" value="LinkedLab partner application (${lang.toUpperCase()})"><input type="hidden" name="_template" value="table"><input type="hidden" name="_captcha" value="false"><input type="hidden" name="_next" value="${esc(next)}"><input type="hidden" name="language" value="${lang}"><input type="hidden" name="referral_code" value="" data-referral-input><label><span>${esc(p.fields.name)}</span><input type="text" name="name_or_business" placeholder="${esc(p.placeholders.name)}" autocomplete="organization" required></label><label><span>${esc(p.fields.email)}</span><input type="email" name="email" placeholder="${esc(p.placeholders.email)}" autocomplete="email" required></label><label><span>${esc(p.fields.channel)}</span><input type="text" name="preferred_contact" placeholder="${esc(p.placeholders.channel)}"></label><label><span>${esc(p.fields.activity)}</span><select name="activity" required>${p.activities.map((item, index) => `<option value="${index ? esc(item) : ""}"${index ? "" : " disabled selected"}>${esc(item)}</option>`).join("")}</select></label><label class="partner-form__wide"><span>${esc(p.fields.message)}</span><textarea name="message" rows="5" placeholder="${esc(p.placeholders.message)}"></textarea></label><label class="partner-form__honeypot" aria-hidden="true"><span>Website</span><input type="text" name="_honey" tabindex="-1" autocomplete="off"></label><p class="partner-form__note">${esc(p.formNote)} <a href="${paths[lang].privacy}">${esc(p.privacyLink)}</a>.</p><button class="button button--primary partner-form__submit" type="submit" data-submit-label="${esc(p.submit)}" data-sending-label="${esc(p.sending)}">${esc(p.submit)} ${icon("arrow")}</button><p class="form-status" data-form-status data-success="${esc(p.success)}" role="status" aria-live="polite"></p></form></section>
+    <section class="section faq-section partner-faq">${sectionHead(p.faqKicker, p.faqTitle)}<div class="faq-list">${p.faqs.map(([question, answer], index) => `<details${index === 0 ? " open" : ""}><summary>${esc(question)}<span>+</span></summary><p>${esc(answer)}</p></details>`).join("")}</div></section>
+    ${cta(lang, p.finalTitle, p.finalText)}`;
 }
 
 function renderContact(lang) {
@@ -182,7 +204,7 @@ function renderContact(lang) {
   }[lang];
   const whatsappUrl = `${site.whatsapp}?text=${encodeURIComponent(whatsappText)}`;
   return `
-    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">${icon("whatsapp")}</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true)}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon" aria-hidden="true">${icon("instagram")}</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
+    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p><p class="referral-notice" data-referral-notice hidden>${esc(lang === "de" ? "Empfehlungscode erkannt:" : lang === "es" ? "Código de recomendación detectado:" : "Referral code detected:")} <strong data-referral-code></strong></p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">${icon("whatsapp")}</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true, ' data-whatsapp-link')}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon" aria-hidden="true">${icon("instagram")}</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
     <section class="section message-guide">${sectionHead(t.common.eyebrow, p.messageGuideTitle)}${checklist(p.messageGuide)}</section>`;
 }
 
@@ -222,7 +244,7 @@ function renderLegal(lang, key) {
 }
 
 function renderBody(lang, key) {
-  return ({ home: renderHome, websites: renderWebsites, systems: renderSystems, pricing: renderPricing, process: renderProcess, projects: renderProjects, contact: renderContact, legal: (l) => renderLegal(l, "legal"), privacy: (l) => renderLegal(l, "privacy"), cookies: (l) => renderLegal(l, "cookies") })[key](lang);
+  return ({ home: renderHome, websites: renderWebsites, systems: renderSystems, pricing: renderPricing, process: renderProcess, projects: renderProjects, partners: renderPartners, contact: renderContact, legal: (l) => renderLegal(l, "legal"), privacy: (l) => renderLegal(l, "privacy"), cookies: (l) => renderLegal(l, "cookies") })[key](lang);
 }
 
 function pageMeta(lang, key) {
@@ -230,19 +252,20 @@ function pageMeta(lang, key) {
   if (key === "legal") return { title: `${t.legal.title} | LinkedLab`, description: t.legal.intro };
   if (key === "privacy") return { title: `${t.legal.privacyTitle} | LinkedLab`, description: t.legal.privacyIntro };
   if (key === "cookies") return { title: `${t.legal.cookiesTitle} | LinkedLab`, description: t.legal.cookiesIntro };
+  if (key === "partners") return { title: partnerContent[lang].seoTitle, description: partnerContent[lang].seoDescription };
   return { title: t[key].seoTitle, description: t[key].seoDescription };
 }
 
 function header(lang, key) {
   const t = content[lang], p = paths[lang];
-  const navItems = [["websites", t.nav.websites], ["systems", t.nav.systems], ["pricing", t.nav.pricing], ["projects", t.nav.projects]];
+  const navItems = [["websites", t.nav.websites], ["systems", t.nav.systems], ["pricing", t.nav.pricing], ["projects", t.nav.projects], ["partners", t.nav.partners]];
   const langLinks = site.languages.map((code) => `<a href="${paths[code][key]}" lang="${code}" hreflang="${code}"${code === lang ? ' aria-current="true"' : ""}>${code.toUpperCase()}</a>`).join("");
   return `<header class="site-header"><a class="brand" href="${p.home}" aria-label="LinkedLab">${brand()}</a><nav class="desktop-nav" aria-label="${esc(t.ui.navLabel)}">${navItems.map(([id, label]) => `<a href="${p[id]}"${key === id ? ' aria-current="page"' : ""}>${esc(label)}</a>`).join("")}</nav><div class="header-actions"><div class="language-switcher" aria-label="${esc(t.ui.languageLabel)}">${langLinks}</div>${button(t.nav.contact, p.contact, "header")}<button class="menu-button" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="${esc(t.ui.openMenu)}" data-open-label="${esc(t.ui.openMenu)}" data-close-label="${esc(t.ui.closeMenu)}">${icon("menu")}<span class="sr-only">${esc(t.ui.openMenu)}</span></button></div><nav id="mobile-menu" class="mobile-nav" aria-label="${esc(t.ui.mobileNav)}" hidden>${navItems.map(([id, label]) => `<a href="${p[id]}"${key === id ? ' aria-current="page"' : ""}>${esc(label)}</a>`).join("")}<a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a><div class="mobile-language">${langLinks}</div></nav></header>`;
 }
 
 function footer(lang) {
   const t = content[lang], p = paths[lang];
-  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong><a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a><a href="${p.cookies}">${esc(t.footer.cookies)}</a><button class="footer-cookie-button" type="button" data-cookie-settings>${esc(t.footer.cookieSettings)}</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
+  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.partners}">${esc(t.nav.partners)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong><a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a><a href="${p.cookies}">${esc(t.footer.cookies)}</a><button class="footer-cookie-button" type="button" data-cookie-settings>${esc(t.footer.cookieSettings)}</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
 }
 
 function cookieConsent(lang) {
@@ -265,8 +288,7 @@ function schema(lang, key) {
 function html(lang, key) {
   const t = content[lang], meta = pageMeta(lang, key), canonical = `${baseUrl}${paths[lang][key]}`;
   const alternates = site.languages.map((code) => `<link rel="alternate" hreflang="${code}" href="${baseUrl}${paths[code][key]}">`).join("");
-  const intro = key === "home" ? `<div class="site-intro" data-site-intro aria-label="LinkedLab"><div class="site-intro__halo"></div><div class="site-intro__shapes"><i></i><i></i><i></i><i></i></div><div class="site-intro__brand"><span><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div><div class="site-intro__line"></div><button type="button" data-skip-intro>${esc(t.ui.skipIntro)}</button></div>` : "";
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script><script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script><script defer src="/_vercel/insights/script.js"></script></head><body>${intro}<a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}${cookieConsent(lang)}</body></html>`;
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script><script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script><script defer src="/_vercel/insights/script.js"></script></head><body><a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}${cookieConsent(lang)}</body></html>`;
 }
 
 async function write(relative, data) {

@@ -59,45 +59,6 @@ if (cursorAura && !reducedMotion.matches && matchMedia("(pointer: fine)").matche
   requestAnimationFrame(renderCursor);
 }
 
-const intro = document.querySelector("[data-site-intro]");
-
-if (intro) {
-  const navigationType = performance.getEntriesByType("navigation")[0]?.type;
-  const skipRepeatedIntro = navigationType === "reload" || navigationType === "back_forward";
-
-  const hideIntro = (immediate = false) => {
-    if (intro.classList.contains("is-exiting") || intro.classList.contains("is-hidden")) return;
-    document.body.classList.remove("intro-active");
-    if (immediate || reducedMotion.matches) {
-      intro.classList.add("is-hidden");
-      return;
-    }
-    intro.classList.add("is-exiting");
-    setTimeout(() => intro.classList.add("is-hidden"), 1050);
-  };
-
-  if (skipRepeatedIntro || reducedMotion.matches) hideIntro(true);
-  else {
-    document.body.classList.add("intro-active");
-    const introTimer = setTimeout(hideIntro, 1350);
-    intro.addEventListener("pointermove", (event) => {
-      intro.style.setProperty("--intro-x", `${(event.clientX / innerWidth * 100).toFixed(1)}%`);
-      intro.style.setProperty("--intro-y", `${(event.clientY / innerHeight * 100).toFixed(1)}%`);
-    }, { passive: true });
-    intro.querySelector("[data-skip-intro]")?.addEventListener("click", () => {
-      clearTimeout(introTimer);
-      hideIntro();
-    });
-    const escapeIntro = (event) => {
-      if (event.key !== "Escape") return;
-      clearTimeout(introTimer);
-      hideIntro();
-      removeEventListener("keydown", escapeIntro);
-    };
-    addEventListener("keydown", escapeIntro);
-  }
-}
-
 const consentCookieName = "linkedlab_consent";
 const cookieBanner = document.querySelector("[data-cookie-banner]");
 const cookieModal = document.querySelector("[data-cookie-modal]");
@@ -167,7 +128,7 @@ if (!reducedMotion.matches) {
   revealTargets.forEach((target) => revealObserver.observe(target));
 
   if (matchMedia("(pointer: fine)").matches) {
-    const surfaces = document.querySelectorAll(".service-card, .feature-card, .pricing-card, .mini-projects article, .project-art, .contact-card");
+    const surfaces = document.querySelectorAll(".service-card, .feature-card, .pricing-card, .mini-projects article, .project-card, .partner-profile-grid article, .contact-card");
     for (const surface of surfaces) {
       surface.classList.add("interactive-surface");
       surface.addEventListener("pointermove", (event) => {
@@ -216,6 +177,72 @@ if (!reducedMotion.matches) {
 }
 
 addEventListener("pageshow", () => document.documentElement.classList.remove("is-leaving"));
+
+const referralStorageKey = "linkedlab_ref";
+const referralParam = new URLSearchParams(location.search).get("ref");
+const safeReferral = referralParam?.trim().match(/^[a-z0-9_-]{2,32}$/i)?.[0] || "";
+
+try {
+  if (safeReferral) sessionStorage.setItem(referralStorageKey, safeReferral.toUpperCase());
+} catch {
+  // Referral attribution still works through the current URL if storage is unavailable.
+}
+
+let referralCode = safeReferral.toUpperCase();
+if (!referralCode) {
+  try { referralCode = sessionStorage.getItem(referralStorageKey) || ""; } catch { referralCode = ""; }
+}
+
+if (referralCode) {
+  for (const input of document.querySelectorAll("[data-referral-input]")) input.value = referralCode;
+  for (const output of document.querySelectorAll("[data-referral-code]")) output.textContent = referralCode;
+  for (const notice of document.querySelectorAll("[data-referral-notice]")) notice.removeAttribute("hidden");
+  for (const link of document.querySelectorAll("[data-whatsapp-link]")) {
+    const next = new URL(link.href);
+    const message = next.searchParams.get("text") || "";
+    next.searchParams.set("text", `${message}\n\nReferral code: ${referralCode}`);
+    link.href = next.toString();
+  }
+}
+
+const partnerRange = document.querySelector("[data-partner-range]");
+if (partnerRange) {
+  const clientOutput = document.querySelector("[data-partner-clients]");
+  const earningsOutput = document.querySelector("[data-partner-earnings]");
+  const updatePartnerCalculator = () => {
+    const clients = Math.max(1, Math.min(10, Number(partnerRange.value) || 1));
+    if (clientOutput) clientOutput.textContent = String(clients);
+    if (earningsOutput) earningsOutput.textContent = `${clients * 50} €`;
+    partnerRange.style.setProperty("--range-progress", `${((clients - 1) / 9) * 100}%`);
+  };
+  partnerRange.addEventListener("input", updatePartnerCalculator);
+  updatePartnerCalculator();
+}
+
+const partnerForm = document.querySelector("[data-partner-form]");
+if (partnerForm) {
+  const status = partnerForm.querySelector("[data-form-status]");
+  const submit = partnerForm.querySelector("button[type='submit']");
+  if (new URLSearchParams(location.search).get("application") === "sent") {
+    if (status) status.textContent = status.dataset.success || "";
+    partnerForm.classList.add("is-success");
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete("application");
+    history.replaceState({}, "", cleanUrl);
+  }
+  partnerForm.addEventListener("submit", (event) => {
+    if (!partnerForm.checkValidity()) {
+      event.preventDefault();
+      partnerForm.reportValidity();
+      return;
+    }
+    if (submit) {
+      submit.disabled = true;
+      submit.classList.add("is-loading");
+      submit.textContent = submit.dataset.sendingLabel || "Sending …";
+    }
+  });
+}
 
 const orbit = document.querySelector("[data-digital-orbit]");
 const canvas = orbit?.querySelector("canvas");

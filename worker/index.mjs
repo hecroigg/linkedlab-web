@@ -1,5 +1,4 @@
 const CANONICAL_ORIGIN = "https://linkedlab.eu";
-const INTRO_COOKIE = "linkedlab_intro_seen=1";
 
 const routeGroups = [
   ["/de/", "/en/", "/es/"],
@@ -8,6 +7,7 @@ const routeGroups = [
   ["/de/preise/", "/en/pricing/", "/es/precios/"],
   ["/de/ablauf/", "/en/how-it-works/", "/es/proceso/"],
   ["/de/projekte/", "/en/work/", "/es/proyectos/"],
+  ["/de/partnerprogramm/", "/en/partners/", "/es/colaboradores/"],
   ["/de/kontakt/", "/en/contact/", "/es/contacto/"],
   ["/de/impressum/", "/en/legal-notice/", "/es/aviso-legal/"],
   ["/de/datenschutz/", "/en/privacy/", "/es/privacidad/"],
@@ -70,32 +70,12 @@ export default {
     const headers = new Headers(assetResponse.headers);
     headers.delete("content-length");
 
-    const alreadySawIntro = (request.headers.get("cookie") || "")
-      .split(";")
-      .some((cookie) => cookie.trim() === INTRO_COOKIE);
-
-    if (!alreadySawIntro && contentType.includes("text/html")) {
-      headers.append("Set-Cookie", `${INTRO_COOKIE}; Path=/; SameSite=Lax; Secure; HttpOnly`);
-    }
-
     const originalText = await assetResponse.text();
     const cleanedText = cleanGeneratedText(originalText, url.pathname, contentType);
-    let response = new Response(cleanedText, {
+    return new Response(cleanedText, {
       status: assetResponse.status,
       statusText: assetResponse.statusText,
       headers
     });
-
-    if (alreadySawIntro && contentType.includes("text/html")) {
-      response = new HTMLRewriter()
-        .on("[data-site-intro]", {
-          element(element) {
-            element.remove();
-          }
-        })
-        .transform(response);
-    }
-
-    return response;
   }
 };
