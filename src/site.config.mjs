@@ -3,8 +3,10 @@ export const site = {
   descriptor: "Websites & Digital Systems",
   instagram: "https://www.instagram.com/linked.lab/",
   instagramHandle: "@linked.lab",
-  whatsapp: "https://wa.me/34693505546",
-  whatsappDisplay: "+34 693 505 546",
+  contacts: [
+    { country: "de", phone: "+4915222723464", display: "+49 1522 2723464", whatsapp: "https://wa.me/4915222723464" },
+    { country: "es", phone: "+34693505546", display: "+34 693 505 546", whatsapp: "https://wa.me/34693505546" }
+  ],
   defaultLanguage: "en",
   languages: ["de", "en", "es"],
   serviceAreas: ["Mannheim", "Ludwigshafen", "Rhein-Neckar", "Remote"],
@@ -29,7 +31,6 @@ export const site = {
     tradingName: "LinkedLab",
     addressLines: ["B 7, 17", "68159 Mannheim", "Deutschland"],
     email: "linkedlab.info@gmail.com",
-    phone: "+34 693 505 546",
     legalForm: "Nicht im Handelsregister eingetragener Einzelanbieter",
     taxId: "Keine Umsatzsteuer-Identifikationsnummer erteilt",
     register: "Kein Handelsregistereintrag"
@@ -40,6 +41,6 @@ export const editable = {
   // All commercial values are centralized here so future price changes require one edit.
   pricing: site.pricing,
   serviceAreas: site.serviceAreas,
-  social: { instagram: site.instagram, instagramHandle: site.instagramHandle },
+  social: { instagram: site.instagram, instagramHandle: site.instagramHandle, contacts: site.contacts },
   legal: site.legal
 };

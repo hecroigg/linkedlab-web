@@ -13,6 +13,19 @@ if (menuButton && mobileMenu) {
     document.body.classList.toggle("menu-open", !open);
     if (!open) header?.classList.remove("site-header--hidden");
   });
+  const closeMobileMenu = () => {
+    if (menuButton.getAttribute("aria-expanded") !== "true") return;
+    menuButton.click();
+  };
+  addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menuButton.getAttribute("aria-expanded") === "true") {
+      closeMobileMenu();
+      menuButton.focus();
+    }
+  });
+  matchMedia("(min-width: 1281px)").addEventListener("change", (event) => {
+    if (event.matches) closeMobileMenu();
+  });
 }
 
 let lastY = 0;

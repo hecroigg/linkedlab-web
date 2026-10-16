@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { content, paths } from "../src/content.mjs";
 import { legalContent } from "../src/legal-content.mjs";
 import { partnerContent } from "../src/partner-content.mjs";
@@ -8,6 +9,13 @@ import { site } from "../src/site.config.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
+const [stylesheetSource, clientSource] = await Promise.all([
+  readFile(join(root, "src", "styles.css"), "utf8"),
+  readFile(join(root, "src", "client.js"), "utf8")
+]);
+const fingerprint = (source) => createHash("sha256").update(source).digest("hex").slice(0,12);
+const stylesheetAsset = `/assets/styles-${fingerprint(stylesheetSource)}.css`;
+const clientAsset = `/assets/client-${fingerprint(clientSource)}.js`;
 const baseUrl = (
   process.env.SITE_URL
   || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab-web.vercel.app")
@@ -45,6 +53,15 @@ const cards = (items, className = "feature-grid") => `<div class="${className}">
 const checklist = (items) => `<ul class="check-list">${items.map((item) => `<li>${icon("check")}<span>${esc(item)}</span></li>`).join("")}</ul>`;
 
 const kineticTitle = (title) => title.split(" ").map((word, index) => `<span style="--word:${index}">${esc(word)}</span>`).join(" ");
+
+const contactLabels = {
+  de: { de: "Deutschland", es: "Spanien", title: "Zwei Nummern. Ein direkter Kontakt.", text: "Wählen Sie die deutsche oder die spanische Nummer. Über beide erreichen Sie LinkedLab direkt auf WhatsApp.", message: "Hallo, ich möchte über eine Website oder ein digitales System für mein Unternehmen sprechen." },
+  en: { de: "Germany", es: "Spain", title: "Two numbers. One direct connection.", text: "Choose the German or Spanish number. Both connect you directly with LinkedLab on WhatsApp.", message: "Hi, I would like to talk about a website or digital system for my business." },
+  es: { de: "Alemania", es: "España", title: "Dos números. Un contacto directo.", text: "Elige el número alemán o el español. En ambos puedes escribir directamente a LinkedLab por WhatsApp.", message: "Hola, me gustaría hablar sobre una página web o un sistema digital para mi negocio." }
+};
+
+const orderedContacts = (lang) => [...site.contacts].sort((a, b) => Number(b.country === lang) - Number(a.country === lang));
+const whatsappUrl = (contact, lang) => `${contact.whatsapp}?text=${encodeURIComponent(contactLabels[lang].message)}`;
 
 const sectionHead = (kicker, title, text = "", level = 2) => `<div class="section-head"><p class="eyebrow">${esc(kicker)}</p><h${level}>${esc(title)}</h${level}>${text ? `<p>${esc(text)}</p>` : ""}</div>`;
 
@@ -197,14 +214,10 @@ function renderPartners(lang) {
 
 function renderContact(lang) {
   const t = content[lang], p = t.contact;
-  const whatsappText = {
-    de: "Hallo, ich möchte über eine Website oder ein digitales System für mein Unternehmen sprechen.",
-    en: "Hi, I would like to talk about a website or digital system for my business.",
-    es: "Hola, me gustaría hablar sobre una página web o un sistema digital para mi negocio."
-  }[lang];
-  const whatsappUrl = `${site.whatsapp}?text=${encodeURIComponent(whatsappText)}`;
+  const labels = contactLabels[lang];
+  const contactOptions = orderedContacts(lang).map((contact) => `<a class="contact-number" href="${esc(whatsappUrl(contact, lang))}" target="_blank" rel="noopener noreferrer" data-whatsapp-link data-contact-region="${contact.country}" aria-label="${esc(`${p.whatsappButton} · ${labels[contact.country]} · ${contact.display}`)}"><span class="contact-number__country" aria-hidden="true">${contact.country.toUpperCase()}</span><span class="contact-number__details"><span>${esc(labels[contact.country])}</span><strong>${esc(contact.display)}</strong><span class="contact-number__action">${esc(p.whatsappButton)}</span></span><span class="contact-number__icon" aria-hidden="true">${icon("whatsapp")}${icon("external")}</span></a>`).join("");
   return `
-    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p><p class="referral-notice" data-referral-notice hidden>${esc(lang === "de" ? "Empfehlungscode erkannt:" : lang === "es" ? "Código de recomendación detectado:" : "Referral code detected:")} <strong data-referral-code></strong></p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">${icon("whatsapp")}</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(site.whatsappDisplay)}</h2><p>${esc(p.whatsappText)}</p>${button(p.whatsappButton, whatsappUrl, "whatsapp", true, ' data-whatsapp-link')}<small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon" aria-hidden="true">${icon("instagram")}</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
+    <section class="contact-hero"><div>${sectionHead(p.kicker, p.title, p.intro, 1)}<p class="response-time"><span></span>${esc(p.response)}</p><p class="referral-notice" data-referral-notice hidden>${esc(lang === "de" ? "Empfehlungscode erkannt:" : lang === "es" ? "Código de recomendación detectado:" : "Referral code detected:")} <strong data-referral-code></strong></p></div><div class="contact-channel-grid"><article class="contact-card contact-card--whatsapp"><span class="contact-icon" aria-hidden="true">${icon("whatsapp")}</span><p class="eyebrow">${esc(p.whatsappTitle)}</p><h2>${esc(labels.title)}</h2><p>${esc(labels.text)}</p><div class="contact-number-list">${contactOptions}</div><small>${esc(p.finalNote)}</small></article><article class="contact-card contact-card--instagram"><span class="contact-icon" aria-hidden="true">${icon("instagram")}</span><p class="eyebrow">${esc(p.instagramTitle)}</p><h2>${esc(site.instagramHandle)}</h2><p>${esc(p.instagramText)}</p>${button(p.button, site.instagram, "primary", true)}<small>${esc(p.finalNote)}</small></article></div></section>
     <section class="section message-guide">${sectionHead(t.common.eyebrow, p.messageGuideTitle)}${checklist(p.messageGuide)}</section>`;
 }
 
@@ -212,7 +225,7 @@ function legalDetails(kind, lang) {
   const legal = site.legal;
   const countries = { de: "Deutschland", en: "Germany", es: "Alemania" };
   const address = [...legal.addressLines.slice(0, -1), countries[lang]].map(esc).join("<br>");
-  if (kind === "contact" || kind === "controller") return `<address><strong>${esc(legal.ownerName)}</strong><br>${esc(legal.tradingName)}<br>${address}<br><a href="mailto:${esc(legal.email)}">${esc(legal.email)}</a><br><a href="tel:+34693505546">${esc(legal.phone)}</a></address>`;
+  if (kind === "contact" || kind === "controller") return `<address><strong>${esc(legal.ownerName)}</strong><br>${esc(legal.tradingName)}<br>${address}<br><a href="mailto:${esc(legal.email)}">${esc(legal.email)}</a>${orderedContacts(lang).map((contact) => `<br><a href="tel:${contact.phone}">${esc(contact.display)}</a> · ${esc(contactLabels[lang][contact.country])}`).join("")}</address>`;
   if (kind === "registration") {
     const registration = {
       de: ["Angebot durch eine natürliche Person; derzeit nicht im Handelsregister eingetragen.", "Keine Handelsregisternummer vorhanden.", "Keine Umsatzsteuer-Identifikationsnummer erteilt."],
@@ -265,7 +278,7 @@ function header(lang, key) {
 
 function footer(lang) {
   const t = content[lang], p = paths[lang];
-  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.partners}">${esc(t.nav.partners)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong><a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a><a href="${p.cookies}">${esc(t.footer.cookies)}</a><button class="footer-cookie-button" type="button" data-cookie-settings>${esc(t.footer.cookieSettings)}</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
+  return `<footer class="site-footer"><div class="footer-main"><a class="brand brand--footer" href="${p.home}">${brand()}</a><p>${esc(t.footer.line)}</p><p>${esc(t.footer.area)}</p></div><div class="footer-links"><div><strong>${esc(t.common.eyebrow)}</strong><a href="${p.websites}">${esc(t.nav.websites)}</a><a href="${p.systems}">${esc(t.nav.systems)}</a><a href="${p.pricing}">${esc(t.nav.pricing)}</a></div><div><strong>LinkedLab</strong><a href="${p.process}">${esc(t.nav.process)}</a><a href="${p.projects}">${esc(t.nav.projects)}</a><a href="${p.partners}">${esc(t.nav.partners)}</a><a href="${p.contact}">${esc(t.nav.contact)}</a></div><div><strong>${esc(t.ui.connect)}</strong>${orderedContacts(lang).map((contact) => `<a class="footer-contact" href="${esc(whatsappUrl(contact, lang))}" target="_blank" rel="noopener noreferrer" data-whatsapp-link>${esc(contact.display)} <span>WhatsApp · ${esc(contactLabels[lang][contact.country])}</span></a>`).join("")}<a href="${site.instagram}" target="_blank" rel="noreferrer">${esc(site.instagramHandle)} ${icon("external")}</a><a href="${p.legal}">${esc(t.footer.legal)}</a><a href="${p.privacy}">${esc(t.footer.privacy)}</a><a href="${p.cookies}">${esc(t.footer.cookies)}</a><button class="footer-cookie-button" type="button" data-cookie-settings>${esc(t.footer.cookieSettings)}</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} LinkedLab. ${esc(t.footer.rights)}</span><span>${esc(t.footer.line)}</span></div></footer>`;
 }
 
 function cookieConsent(lang) {
@@ -288,7 +301,7 @@ function schema(lang, key) {
 function html(lang, key) {
   const t = content[lang], meta = pageMeta(lang, key), canonical = `${baseUrl}${paths[lang][key]}`;
   const alternates = site.languages.map((code) => `<link rel="alternate" hreflang="${code}" href="${baseUrl}${paths[code][key]}">`).join("");
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="/assets/styles.css"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="/assets/client.js"></script><script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script><script defer src="/_vercel/insights/script.js"></script></head><body><a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}${cookieConsent(lang)}</body></html>`;
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(meta.title)}</title><meta name="description" content="${esc(meta.description)}"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="${canonical}">${alternates}<link rel="alternate" hreflang="x-default" href="${baseUrl}${paths.de[key]}"><meta property="og:type" content="website"><meta property="og:site_name" content="LinkedLab"><meta property="og:locale" content="${t.locale}"><meta property="og:title" content="${esc(meta.title)}"><meta property="og:description" content="${esc(meta.description)}"><meta property="og:url" content="${canonical}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(meta.title)}"><meta name="twitter:description" content="${esc(meta.description)}"><meta name="theme-color" content="#071426"><link rel="icon" href="/assets/linkedlab-logo-mark.webp" type="image/webp"><link rel="stylesheet" href="${stylesheetAsset}"><script type="application/ld+json">${schema(lang, key)}</script><script type="module" src="${clientAsset}"></script><script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script><script defer src="/_vercel/insights/script.js"></script></head><body><a class="skip-link" href="#main">${esc(t.skip)}</a>${header(lang, key)}<main id="main">${renderBody(lang, key)}</main>${footer(lang)}${cookieConsent(lang)}</body></html>`;
 }
 
 async function write(relative, data) {
@@ -310,12 +323,12 @@ const sitemapUrls = site.languages.flatMap((lang) => pageKeys.map((key) => `${ba
 await write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemapUrls.map((url) => `<url><loc>${url}</loc></url>`).join("")}</urlset>`);
 await write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`);
 await write("index.html", '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="LinkedLab — Websites & Digital Systems"><meta http-equiv="refresh" content="0;url=/de/"><link rel="canonical" href="/de/"><title>LinkedLab</title></head><body><a href="/de/">LinkedLab</a></body></html>');
-await write("404.html", await readFile(join(root, "src", "404.html"), "utf8"));
+await write("404.html", (await readFile(join(root, "src", "404.html"), "utf8")).replaceAll("/assets/styles.css", stylesheetAsset));
 await write("_redirects", "/ /de/ 302\n");
 await write("_headers", "/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  X-Frame-Options: SAMEORIGIN\n  Cache-Control: public, max-age=0, must-revalidate\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n");
 await mkdir(join(dist, "assets"), { recursive: true });
-await cp(join(root, "src", "styles.css"), join(dist, "assets", "styles.css"));
-await cp(join(root, "src", "client.js"), join(dist, "assets", "client.js"));
+await write(stylesheetAsset.slice(1), stylesheetSource);
+await write(clientAsset.slice(1), clientSource);
 await cp(join(root, "public", "favicon.svg"), join(dist, "favicon.svg"));
 await cp(join(root, "public", "assets", "linkedlab-logo-mark.webp"), join(dist, "assets", "linkedlab-logo-mark.webp"));
 await cp(join(root, "public", "assets", "linkedlab-logo-full.webp"), join(dist, "assets", "linkedlab-logo-full.webp"));
