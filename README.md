@@ -40,6 +40,20 @@ npm run check
 
 The static output is written to `dist/`.
 
+## Cloudflare Workers
+
+The production Worker is `linkedlab-web`, serving `https://linkedlab.eu`.
+Workers Builds connects the `main` branch of `hecroigg/linkedlab-web` with these settings:
+
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/` (the repository root)
+
+`wrangler.jsonc` defines the Worker entry point and the `dist/` assets directory.
+Check the build logs in Cloudflare if deployment fails. A successful build followed
+by a `504` from `assets-upload-session` identifies an API timeout during asset upload;
+retry the failed build from its build details page.
+
 ## Vercel
 
 Use these project settings:
