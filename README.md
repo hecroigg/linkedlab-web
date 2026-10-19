@@ -54,6 +54,19 @@ Check the build logs in Cloudflare if deployment fails. A successful build follo
 by a `504` from `assets-upload-session` identifies an API timeout during asset upload;
 retry the failed build from its build details page.
 
+### Deploy from GitHub Actions
+
+`.github/workflows/deploy-cloudflare.yml` can publish the same Worker using a GitHub
+runner, independently of Cloudflare's build environment. Add a repository Actions
+secret named `CLOUDFLARE_API_TOKEN` with permission to edit Workers in the account
+configured in `wrangler.jsonc`. Store the token in GitHub Secrets only.
+
+The workflow builds and checks the site before deployment. It runs on production
+file changes pushed to `main`, or manually through Actions > Deploy linkedlab.eu >
+Run workflow. Concurrent deployments are queued so an active deployment is not
+interrupted. Use one automatic deployment pipeline at a time; disable Workers
+Builds in Cloudflare when GitHub Actions becomes the production pipeline.
+
 ## Vercel
 
 Use these project settings:
