@@ -6,16 +6,23 @@ import { content, paths } from "../src/content.mjs";
 import { legalContent } from "../src/legal-content.mjs";
 import { partnerContent } from "../src/partner-content.mjs";
 import { site } from "../src/site.config.mjs";
+import { renderEcosystem, renderSystemNetwork } from "../src/ecosystem-markup.mjs";
+import { build, transform } from "esbuild";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
-const [stylesheetSource, clientSource] = await Promise.all([
-  readFile(join(root, "src", "styles.css"), "utf8"),
-  readFile(join(root, "src", "client.js"), "utf8")
-]);
+const stylesheetSource = (await transform((await Promise.all(["styles.css", "ecosystem.css"].map((file) => readFile(join(root, "src", file), "utf8")))).join("\n"), { loader: "css", minify: true, target: "es2020" })).code;
+await rm(dist, { recursive: true, force: true });
+await mkdir(dist, { recursive: true });
+const bundled = await build({
+  entryPoints: [join(root, "src", "client.js")], outdir: join(dist, "assets"),
+  bundle: true, splitting: true, format: "esm", minify: true, target: "es2020",
+  entryNames: "[name]-[hash]", chunkNames: "[name]-[hash]", metafile: true,
+  legalComments: "external"
+});
 const fingerprint = (source) => createHash("sha256").update(source).digest("hex").slice(0,12);
 const stylesheetAsset = `/assets/styles-${fingerprint(stylesheetSource)}.css`;
-const clientAsset = `/assets/client-${fingerprint(clientSource)}.js`;
+const clientAsset = "/" + Object.keys(bundled.metafile.outputs).find((path) => bundled.metafile.outputs[path].entryPoint?.endsWith("src/client.js")).replaceAll("\\", "/").split("/dist/").pop().replace(/^dist\//, "");
 const baseUrl = (
   process.env.SITE_URL
   || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://linkedlab-web.vercel.app")
@@ -74,7 +81,6 @@ function renderHome(lang) {
   const t = content[lang];
   const p = t.home;
   return `
-    <div class="cursor-aura" data-cursor-aura aria-hidden="true"><i></i></div>
     <section class="hero hero--home">
       <div class="hero__copy">
         <p class="eyebrow">${esc(p.heroKicker)}</p>
@@ -83,18 +89,7 @@ function renderHome(lang) {
         <div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div>
         <p class="hero__note">${esc(p.heroNote)}</p>
       </div>
-      <div class="hero__visual digital-orbit" data-digital-orbit aria-hidden="true">
-        <canvas class="digital-orbit__canvas"></canvas>
-        <span class="orbit-ring orbit-ring--outer"></span><span class="orbit-ring orbit-ring--inner"></span>
-        <div class="orbit-core"><span class="orbit-core__logo"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span><strong>LinkedLab</strong><small>${esc(t.common.eyebrow)}</small></div>
-        <span class="orbit-node orbit-node--web"><i>01</i><strong>${esc(t.nav.websites)}</strong></span>
-        <span class="orbit-node orbit-node--clients"><i>02</i><strong>${esc(t.ui.system[0])}</strong></span>
-        <span class="orbit-node orbit-node--bookings"><i>03</i><strong>${esc(t.ui.system[1])}</strong></span>
-        <span class="orbit-node orbit-node--data"><i>04</i><strong>${esc(t.ui.system[4])}</strong></span>
-        ${t.ui.orbitExtras.map((label, index) => `<span class="orbit-chip orbit-chip--${index + 1}"><i></i>${esc(label)}</span>`).join("")}
-        <span class="orbit-object orbit-object--cube"></span><span class="orbit-object orbit-object--disc"></span><span class="orbit-object orbit-object--spark"></span>
-        <span class="orbit-signal"><i></i>${esc(t.ui.noLockIn)}</span>
-      </div>
+      ${renderEcosystem(lang)}
     </section>
     <section class="capability-marquee" aria-hidden="true"><div>${[...p.journeyTicker, ...p.journeyTicker].map((item) => `<span>${esc(item)}<i></i></span>`).join("")}</div></section>
     <section class="digital-journey" data-digital-journey>
@@ -146,7 +141,7 @@ function renderHome(lang) {
 function renderWebsites(lang) {
   const t = content[lang], p = t.websites;
   return `
-    <section class="hero hero--inner"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}<div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div></div><div class="hero-proof"><span>01</span><strong>${esc(t.ui.fast)}</strong><span>02</span><strong>${esc(t.ui.local)}</strong><span>03</span><strong>${esc(t.ui.yours)}</strong></div></section>
+    <section class="hero hero--inner hero--websites"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}<div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div><div class="website-principles"><span>${esc(t.ui.fast)}</span><span>${esc(t.ui.local)}</span><span>${esc(t.ui.yours)}</span></div></div>${renderEcosystem(lang, "websites")}</section>
     <section class="section">${sectionHead(p.kicker, p.outcomesTitle)}${cards(p.outcomes)}</section>
     <section class="section section--soft inclusion"><div>${sectionHead(t.common.eyebrow, p.includedTitle)}${checklist(p.included)}</div><aside><p class="eyebrow">${esc(t.ui.local)}</p><h3>${esc(p.idealTitle)}</h3><p>${esc(p.idealText)}</p>${tags(site.serviceAreas.map((area) => area === "Remote" ? t.ui.remote : area))}</aside></section>
     <section class="ownership-banner"><p>${esc(t.common.ownership)}</p><div class="ownership-line">${t.ui.ownershipAssets.map((item) => `<span>${esc(item)}</span>`).join("")}</div></section>
@@ -156,7 +151,7 @@ function renderWebsites(lang) {
 function renderSystems(lang) {
   const t = content[lang], p = t.systems;
   return `
-    <section class="hero hero--inner hero--systems"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="system-diagram" aria-hidden="true"><span>${esc(t.ui.system[0])}</span><span>${esc(t.ui.system[1])}</span><strong>${esc(t.ui.system[2])}</strong><span>${esc(t.ui.system[3])}</span><span>${esc(t.ui.system[4])}</span></div></section>
+    <section class="hero hero--inner hero--systems"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div>${renderSystemNetwork(lang)}</section>
     <section class="distinction"><p>${esc(p.distinction)}</p></section>
     <section class="section">${sectionHead(p.kicker, p.useCasesTitle)}${cards(p.useCases)}</section>
     <section class="section section--soft split-intro"><div>${sectionHead(t.common.eyebrow, p.principleTitle)}</div><div><p class="large-copy">${esc(p.principleText)}</p><p class="note-box">${esc(p.pricingNote)}</p></div></section>
@@ -187,12 +182,12 @@ function renderProcess(lang) {
 function renderProjects(lang) {
   const t = content[lang], p = t.projects;
   return `
-    <section class="hero hero--inner"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="project-count"><strong>${String(p.items.length).padStart(2, "0")}</strong><span>${esc(t.ui.selectedProjects)}</span></div></section>
+    <section class="hero hero--inner hero--projects"><div class="hero__copy">${sectionHead(p.kicker, p.title, p.intro, 1)}${button(t.common.talk, paths[lang].contact)}</div><div class="project-count"><strong>${String(p.items.length).padStart(2, "0")}</strong><span>${esc(t.ui.selectedProjects)}</span></div></section>
     <section class="section project-grid">${p.items.map(([name, type, text, status, url, linkLabel, kind], index) => {
       const href = url || paths[lang].home;
       const external = Boolean(url);
       const domain = external ? new URL(url).hostname.replace(/^www\./, "") : "linkedlab.eu";
-      return `<article class="project-card project-card--${index + 1}" data-project-card><div class="project-preview project-preview--${index + 1}" aria-hidden="true"><div class="project-preview__chrome"><i></i><i></i><i></i><span>${esc(domain)}</span></div><div class="project-preview__screen"><span class="project-preview__number">${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong><div class="project-preview__layout"><i></i><i></i><i></i></div></div></div><div class="project-card__body"><div class="project-card__meta"><span class="project-status project-status--${kind || "live"}">${esc(status)}</span><span>${esc(type)}</span></div><h2>${esc(name)}</h2><p>${esc(text)}</p><a class="button button--text project-link" href="${esc(href)}"${external ? ' target="_blank" rel="noreferrer"' : ""}>${esc(linkLabel)} ${icon(external ? "external" : "arrow")}</a></div></article>`;
+      return `<article class="project-card project-card--${index + 1}" data-project-card><div class="project-preview project-preview--${index + 1}" aria-hidden="true"><div class="project-preview__window"><div class="project-preview__chrome"><i></i><i></i><i></i><span>${esc(domain)}</span></div><div class="project-preview__screen"><span class="project-preview__number">${String(index + 1).padStart(2, "0")}</span><strong>${esc(name)}</strong><div class="project-preview__layout"><i></i><i></i><i></i></div></div></div></div><div class="project-card__body"><div class="project-card__meta"><span class="project-status project-status--${kind || "live"}">${esc(status)}</span><span>${esc(type)}</span></div><h2>${esc(name)}</h2><p>${esc(text)}</p><a class="button button--text project-link" href="${esc(href)}"${external ? ' target="_blank" rel="noreferrer"' : ""}>${esc(linkLabel)} ${icon(external ? "external" : "arrow")}</a></div></article>`;
     }).join("")}</section>
     ${cta(lang, p.finalTitle)}`;
 }
@@ -310,9 +305,6 @@ async function write(relative, data) {
   await writeFile(target, data);
 }
 
-await rm(dist, { recursive: true, force: true });
-await mkdir(dist, { recursive: true });
-
 for (const lang of site.languages) {
   for (const key of pageKeys) {
     await write(join(paths[lang][key].slice(1), "index.html"), html(lang, key));
@@ -328,7 +320,6 @@ await write("_redirects", "/ /de/ 302\n");
 await write("_headers", "/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  X-Frame-Options: SAMEORIGIN\n  Cache-Control: public, max-age=0, must-revalidate\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n");
 await mkdir(join(dist, "assets"), { recursive: true });
 await write(stylesheetAsset.slice(1), stylesheetSource);
-await write(clientAsset.slice(1), clientSource);
 await cp(join(root, "public", "favicon.svg"), join(dist, "favicon.svg"));
 await cp(join(root, "public", "assets", "linkedlab-logo-mark.webp"), join(dist, "assets", "linkedlab-logo-mark.webp"));
 await cp(join(root, "public", "assets", "linkedlab-logo-full.webp"), join(dist, "assets", "linkedlab-logo-full.webp"));

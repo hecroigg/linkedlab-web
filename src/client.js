@@ -44,34 +44,6 @@ for (const detail of document.querySelectorAll(".faq-list details")) {
 }
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-const cursorAura = document.querySelector("[data-cursor-aura]");
-
-if (cursorAura && !reducedMotion.matches && matchMedia("(pointer: fine)").matches) {
-  let cursorX = -100;
-  let cursorY = -100;
-  let cursorTargetX = -100;
-  let cursorTargetY = -100;
-
-  const renderCursor = () => {
-    cursorX += (cursorTargetX - cursorX) * .19;
-    cursorY += (cursorTargetY - cursorY) * .19;
-    cursorAura.style.setProperty("--cursor-x", `${cursorX.toFixed(1)}px`);
-    cursorAura.style.setProperty("--cursor-y", `${cursorY.toFixed(1)}px`);
-    requestAnimationFrame(renderCursor);
-  };
-
-  addEventListener("pointermove", (event) => {
-    cursorTargetX = event.clientX;
-    cursorTargetY = event.clientY;
-    cursorAura.classList.add("is-visible");
-    cursorAura.classList.toggle("is-active", Boolean(event.target instanceof Element && event.target.closest("a, button, .interactive-surface, [data-digital-orbit]")));
-  }, { passive: true });
-  addEventListener("mouseout", (event) => {
-    if (!event.relatedTarget) cursorAura.classList.remove("is-visible");
-  }, { passive: true });
-  requestAnimationFrame(renderCursor);
-}
-
 const consentCookieName = "linkedlab_consent";
 const cookieBanner = document.querySelector("[data-cookie-banner]");
 const cookieModal = document.querySelector("[data-cookie-modal]");
@@ -126,6 +98,12 @@ document.querySelector("[data-cookie-save]")?.addEventListener("click", () => {
 });
 addEventListener("keydown", (event) => {
   if (event.key === "Escape" && cookieModal && !cookieModal.hidden) closeCookieModal();
+  if (event.key === "Tab" && cookieModal && !cookieModal.hidden) {
+    const controls = [...cookieModal.querySelectorAll('button, input, a[href], [tabindex="0"]')].filter((control) => !control.disabled);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
 });
 
 if (!reducedMotion.matches) {
@@ -257,109 +235,6 @@ if (partnerForm) {
   });
 }
 
-const orbit = document.querySelector("[data-digital-orbit]");
-const canvas = orbit?.querySelector("canvas");
-
-if (orbit && canvas) {
-  const context = canvas.getContext("2d");
-  const particleCount = 42;
-  const particles = Array.from({ length: particleCount }, (_, index) => ({
-    angle: (Math.PI * 2 * index) / particleCount + (index % 5) * .21,
-    radius: .14 + ((index * 37) % 78) / 100,
-    speed: .000025 + ((index * 11) % 9) * .000004,
-    size: .65 + (index % 4) * .42,
-    layer: .45 + (index % 6) / 9
-  }));
-  let width = 0;
-  let height = 0;
-  let pointerX = 0;
-  let pointerY = 0;
-  let targetX = 0;
-  let targetY = 0;
-
-  const resize = () => {
-    const bounds = orbit.getBoundingClientRect();
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    width = bounds.width;
-    height = bounds.height;
-    canvas.width = Math.max(1, Math.round(width * dpr));
-    canvas.height = Math.max(1, Math.round(height * dpr));
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-
-  const renderOrbit = (time = 0) => {
-    pointerX += (targetX - pointerX) * .055;
-    pointerY += (targetY - pointerY) * .055;
-    orbit.style.setProperty("--rx", `${(-pointerY * 4.2).toFixed(2)}deg`);
-    orbit.style.setProperty("--ry", `${(pointerX * 5.4).toFixed(2)}deg`);
-    orbit.style.setProperty("--pointer-x", `${(pointerX * 30).toFixed(1)}px`);
-    orbit.style.setProperty("--pointer-y", `${(pointerY * 26).toFixed(1)}px`);
-
-    context.clearRect(0, 0, width, height);
-    const centerX = width * .5 + pointerX * 13;
-    const centerY = height * .5 + pointerY * 10;
-    const scale = Math.min(width, height) * .47;
-    const points = particles.map((particle) => {
-      const angle = particle.angle + time * particle.speed;
-      const radius = scale * particle.radius;
-      return {
-        x: centerX + Math.cos(angle) * radius,
-        y: centerY + Math.sin(angle) * radius * .76,
-        size: particle.size,
-        alpha: particle.layer
-      };
-    });
-
-    for (let a = 0; a < points.length; a += 1) {
-      for (let b = a + 1; b < points.length; b += 1) {
-        const dx = points[a].x - points[b].x;
-        const dy = points[a].y - points[b].y;
-        const distance = Math.hypot(dx, dy);
-        if (distance > 86) continue;
-        context.beginPath();
-        context.moveTo(points[a].x, points[a].y);
-        context.lineTo(points[b].x, points[b].y);
-        context.strokeStyle = `rgba(105,145,255,${(1 - distance / 86) * .16})`;
-        context.lineWidth = .6;
-        context.stroke();
-      }
-    }
-
-    for (const point of points) {
-      context.beginPath();
-      context.arc(point.x, point.y, point.size, 0, Math.PI * 2);
-      context.fillStyle = `rgba(173,197,255,${point.alpha})`;
-      context.shadowColor = "rgba(80,126,255,.7)";
-      context.shadowBlur = point.size * 5;
-      context.fill();
-      context.shadowBlur = 0;
-    }
-
-    if (!reducedMotion.matches) requestAnimationFrame(renderOrbit);
-  };
-
-  const updatePointer = (clientX, clientY) => {
-    const bounds = orbit.getBoundingClientRect();
-    targetX = Math.max(-1, Math.min(1, ((clientX - bounds.left) / bounds.width - .5) * 2));
-    targetY = Math.max(-1, Math.min(1, ((clientY - bounds.top) / bounds.height - .5) * 2));
-  };
-
-  orbit.addEventListener("pointermove", (event) => updatePointer(event.clientX, event.clientY), { passive: true });
-  orbit.addEventListener("pointerleave", () => { targetX = 0; targetY = 0; }, { passive: true });
-  addEventListener("deviceorientation", (event) => {
-    if (event.gamma == null || event.beta == null) return;
-    targetX = Math.max(-1, Math.min(1, event.gamma / 28));
-    targetY = Math.max(-1, Math.min(1, (event.beta - 45) / 40));
-  }, { passive: true });
-
-  new ResizeObserver(() => {
-    resize();
-    if (reducedMotion.matches) renderOrbit();
-  }).observe(orbit);
-  resize();
-  requestAnimationFrame(renderOrbit);
-}
-
 const journey = document.querySelector("[data-digital-journey]");
 const journeyWorld = journey?.querySelector("[data-journey-world]");
 
@@ -399,4 +274,33 @@ if (journey && journeyWorld) {
   addEventListener("scroll", scheduleJourney, { passive: true });
   addEventListener("resize", scheduleJourney, { passive: true });
   renderJourney();
+}
+
+// Only pages with an ecosystem load its controller; Three.js remains a second lazy chunk.
+const ecosystems = document.querySelectorAll("[data-ecosystem]");
+if (ecosystems.length) {
+  import("./scene-controller.js").then(({ mountEcosystem }) => ecosystems.forEach(mountEcosystem)).catch(() => {});
+}
+
+for (const network of document.querySelectorAll("[data-connected-system]")) {
+  const labels = JSON.parse(network.querySelector("[data-system-copy]").textContent);
+  const buttons = [...network.querySelectorAll("[data-system-node]")];
+  buttons.forEach((control, index) => control.addEventListener("click", () => {
+    buttons.forEach((button) => button.setAttribute("aria-pressed", String(button === control)));
+    network.querySelector("[data-system-explanation]").textContent = labels[index];
+    network.dataset.activeNode = String(index);
+  }));
+}
+
+// CSS animations sleep outside the viewport and while the document is hidden.
+const animatedSections = [...document.querySelectorAll(".digital-journey, .capability-marquee, .partner-network")];
+if (animatedSections.length) {
+  const visibility = new Map();
+  const update = () => animatedSections.forEach((node) => node.classList.toggle("is-in-view", Boolean(visibility.get(node)) && !document.hidden));
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => visibility.set(entry.target, entry.isIntersecting));
+    update();
+  });
+  animatedSections.forEach((node) => observer.observe(node));
+  document.addEventListener("visibilitychange", update);
 }
