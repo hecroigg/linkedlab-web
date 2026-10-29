@@ -3,6 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import { mountEcosystem } from "../src/scene-controller.js";
 import { paths } from "../src/content.mjs";
+import { storyFrame } from "../src/story-timeline.mjs";
 
 // Exercise lifecycle and real interaction handlers without requiring a GPU in CI.
 class Node extends EventTarget {
@@ -21,19 +22,26 @@ function event(target, name, details = {}) {
   for (const [key, value] of Object.entries(details)) Object.defineProperty(e, key, { value });
   target.dispatchEvent(e); return e;
 }
-function fixture({ reduced = false, saveData = false } = {}) {
+function fixture({ reduced = false, saveData = false, cinematic = false } = {}) {
   const host = new Node(), stage = new Node(), pause = new Node(), reset = new Node(), depth = new Node(), canvas = new Node();
-  const win = new Node(), doc = new Node(), media = new Node(), jobs = [];
+  const win = new Node(), doc = new Node(), media = new Node(), jobs = [], frames = [];
   const observers = []; let contexts = 0;
   depth.value = "0"; pause.dataset = { playLabel: "Play", pauseLabel: "Pause" };
   canvas.getContext = () => { contexts++; return null; };
   host.querySelector = (selector) => ({ "[data-scene-stage]": stage, "[data-scene-pause]": pause, "[data-scene-reset]": reset, "[data-scene-depth]": depth, "[data-scene-canvas]": canvas })[selector];
-  host.closest = () => ({ getBoundingClientRect: () => ({ top: -100, height: 500 }) });
+  const story = new Node(), intro = new Node(), chapters = [new Node(), new Node(), new Node()];
+  let storyTop = -1100;
+  story.getBoundingClientRect = () => ({ top: storyTop, height: 3000, bottom: storyTop + 3000 });
+  story.querySelector = (selector) => ({ "[data-story-viewport]": { clientHeight: 800 }, "[data-story-intro]": intro, "[data-story-count]": new Node() })[selector];
+  story.querySelectorAll = () => chapters;
+  host.closest = (selector) => selector === "[data-scroll-story]" ? cinematic ? story : null : { getBoundingClientRect: () => ({ top: -100, height: 500 }) };
+  doc.querySelector = () => null;
   media.matches = reduced;
   Object.assign(globalThis, {
     window: Object.assign(win, { WebGL2RenderingContext: class {}, requestIdleCallback: true }), document: doc,
     matchMedia: (query) => query.includes("reduced-motion") ? media : Object.assign(new Node(), { matches: false }),
     requestIdleCallback: (fn) => jobs.push(fn), cancelIdleCallback: () => {},
+    requestAnimationFrame: (fn) => frames.push(fn), cancelAnimationFrame: () => {}, innerHeight: 900,
     IntersectionObserver: class {
       constructor(callback) { this.callback = callback; observers.push(this); }
       observe() {} disconnect() { this.disconnected = true; }
@@ -41,7 +49,7 @@ function fixture({ reduced = false, saveData = false } = {}) {
   });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: { connection: { saveData } } });
   mountEcosystem(host);
-  return { host, stage, pause, reset, depth, win, doc, media, jobs, observer: observers[0], contexts: () => contexts };
+  return { host, stage, pause, reset, depth, win, doc, media, jobs, frames, story, intro, chapters, setStoryTop: (value) => { storyTop = value; }, observer: observers[0], contexts: () => contexts };
 }
 for (const options of [{ reduced: true }, { saveData: true }]) {
   const f = fixture(options);
@@ -75,6 +83,24 @@ event(f.win, "pagehide", { persisted: true }); assert.ok(!f.observer.disconnecte
 event(f.win, "pagehide", { persisted: false }); assert.ok(f.observer.disconnected);
 const old = f.host.styles.get("--scene-x"); event(f.stage, "keydown", { key: "ArrowLeft" });
 assert.equal(f.host.styles.get("--scene-x"), old, "Disposed event handlers must not execute");
+
+const story = fixture({ cinematic: true });
+assert.equal(story.story.styles.get("--story-progress"), "0.5000");
+assert.equal(story.intro.inert, true, "Faded intro links must leave keyboard focus order");
+assert.ok(Number(story.story.styles.get("--story-night")) > .9);
+story.setStoryTop(0); event(story.win, "scroll"); story.frames.shift()();
+assert.equal(story.story.styles.get("--story-progress"), "0.0000", "Reverse scrolling restores the initial composition");
+assert.equal(story.intro.inert, false);
+const still = fixture({ cinematic: true, reduced: true });
+assert.equal(still.story.tokens.has("story-ready"), false, "Reduced motion must not create a pinned scroll sequence");
+for (const value of [-1, 0, .2, .5, .8, 1, 2, NaN]) {
+  const frame = storyFrame(value);
+  assert.ok(Object.values(frame).flat().every(Number.isFinite));
+  assert.ok(frame.progress >= 0 && frame.progress <= 1);
+  assert.ok(frame.copy.filter((opacity) => opacity > .5).length <= 1, "Chapter texts must not overlap");
+}
+assert.notEqual(storyFrame(.3).rotateY, storyFrame(.6).rotateY);
+assert.ok(storyFrame(.35).spread > .9 && storyFrame(.85).nucleus > .9);
 
 // Guard the actual delivered asset budgets, not source-file sizes.
 const dist = new URL("../dist/", import.meta.url);

@@ -165,6 +165,15 @@ export function createEcosystem(host, state, { coarse, context }) {
   b.position.set(.32, .42, .1); b.rotation.set(-.42, .76, -.45);
   sculpture.add(a, b); web.add(sculpture);
   browser.position.set(.05, .03, 0); browser.rotation.set(-.12, -.26, -.065); world.add(browser);
+  const nucleusTexture = surfaceTexture(320, 320, (ctx) => {
+    round(ctx, 0, 0, 320, 320, 32, "#fff");
+    const logo = host.querySelector(".ecosystem__nucleus img");
+    if (logo?.complete && logo.naturalWidth) ctx.drawImage(logo, 25, 10, 270, 270);
+    else text(ctx, "◈", 90, 200, 150, "#2864ff", 750);
+    text(ctx, "LinkedLab", 75, 288, 34, "#122a57", 750);
+  });
+  const nucleus = plate(1.4, 1.4, nucleusTexture, blue);
+  nucleus.position.set(0, .12, 1.45); nucleus.scale.setScalar(.001); world.add(nucleus);
 
   const widgetSpecs = [
     [c.clients, "clients", [-2.6, .48, 1.45], [0, .18, .08], 1.91, 1.2],
@@ -201,7 +210,7 @@ export function createEcosystem(host, state, { coarse, context }) {
   shadow.position.set(0, -2.65, -.8); shadow.rotation.x = -.8; world.add(shadow);
 
   let disposed = false, contextLost = false, visible = false, raf = 0, previous = 0, started = performance.now(), until = started + 2200;
-  let yaw = 0, pitch = 0, expansion = 0;
+  let yaw = 0, pitch = 0, expansion = 0, baseCameraDistance = 11.5, portrait = false;
   const now = () => performance.now();
   const frameInterval = 1000 / (coarse ? 30 : 45);
   function resize() {
@@ -210,7 +219,9 @@ export function createEcosystem(host, state, { coarse, context }) {
     const dpr = Math.min(devicePixelRatio || 1, coarse ? 1.15 : 1.5, Math.sqrt(950000 / (width * height)));
     renderer.setPixelRatio(dpr); renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.position.z = Math.max(11.5, 8.1 / (2 * Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
+    baseCameraDistance = Math.max(11.5, 8.1 / (2 * Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
+    portrait = width < height * .9;
+    camera.position.z = baseCameraDistance;
     camera.position.y = .2;
     camera.lookAt(0, -.02, 0); camera.updateProjectionMatrix();
     request();
@@ -223,7 +234,8 @@ export function createEcosystem(host, state, { coarse, context }) {
     const smooth = 1 - Math.exp(-dt * 7.5);
     yaw += (state.x - yaw) * smooth;
     pitch += (state.y - pitch) * smooth;
-    expansion += (Math.max(state.depth, state.scroll * .78) - expansion) * smooth;
+    const cinematic = state.cinema ? state.frame : null;
+    expansion += (Math.max(state.depth, cinematic ? cinematic.spread : state.scroll * .78) - expansion) * smooth;
     const entry = ease((time - started) / 1500);
     const life = state.paused || coarse && time - started > 2200 ? 0 : time / 1000;
     world.rotation.set(-.02 + pitch * .28 - state.scroll * .05, -.04 + yaw * .56 + state.scroll * .28, 0);
@@ -234,10 +246,27 @@ export function createEcosystem(host, state, { coarse, context }) {
     wire.position.z = -.51 - expansion * 1.1;
     sculpture.position.z = .42 + expansion * .5;
     if (life) sculpture.rotation.y = Math.sin(life * .35) * .08;
+    if (cinematic) {
+      world.position.set(portrait ? 0 : (1 - cinematic.center) * 2.3, portrait ? -3 + cinematic.center * 4 : -.05, 0);
+      world.scale.setScalar((portrait ? .9 + cinematic.center * .1 : .64 + cinematic.center * .36) * (.97 + entry * .03));
+      world.rotation.set(pitch * .16, yaw * .4, 0);
+      browser.rotation.set(cinematic.rotateX * Math.PI / 180, cinematic.rotateY * Math.PI / 180, cinematic.rotateZ * Math.PI / 180);
+      browser.scale.setScalar(cinematic.browserScale);
+      browser.position.y = .03 + Math.sin(life * .65) * .035;
+      camera.position.z = baseCameraDistance * cinematic.zoom;
+      nucleus.scale.setScalar(Math.max(.001, cinematic.nucleus * 1.15));
+      nucleus.rotation.set(.03, -.22 + cinematic.nucleus * .28 + yaw * .12, -.06);
+    }
     nodes.forEach((node, i) => {
       const reveal = ease((time - started - 140 - i * 110) / 1000);
       const p = node.userData.base;
       node.position.set(p.x * (1 + expansion * .12), p.y + (1 - reveal) * (i % 2 ? -.5 : .6) + (life ? Math.sin(life * .7 + i * 1.7) * .06 : 0), p.z + expansion * (i % 2 ? -.75 : .45));
+      if (cinematic) {
+        const targets = [[-2.4, 1.25, 1], [2.4, 1.25, -.3], [2.1, -1.5, 1], [-2.3, -1.4, -.3]][i];
+        node.position.set(p.x * (1 + expansion * .32) * (1 - cinematic.connect) + targets[0] * cinematic.connect, p.y + Math.sin(state.scroll * 7 + i * 1.5) * expansion * .4, p.z + expansion * (i % 2 ? -.7 : .8));
+        node.rotation.y = (i % 2 ? -.2 : .18) + Math.sin(state.scroll * 6 + i) * .25;
+        node.rotation.z = (i % 2 ? -.06 : .07) + Math.sin(state.scroll * 8 + i) * expansion * .14;
+      }
       node.scale.setScalar(.88 + reveal * .12);
       points[i].position.copy(paths[i].getPointAt(life ? (life * .1 + i * .23) % 1 : .35));
     });

@@ -1,3 +1,4 @@
+import { storyFrame } from "./story-timeline.mjs";
 // The page and its CSS illustration are usable before this optional enhancement loads.
 export function mountEcosystem(host) {
   const stage = host.querySelector("[data-scene-stage]");
@@ -6,11 +7,28 @@ export function mountEcosystem(host) {
   const depth = host.querySelector("[data-scene-depth]");
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const coarse = matchMedia("(pointer: coarse)");
+  const compact = matchMedia("(max-height: 599px)");
   const connection = navigator.connection;
+  const story = host.closest("[data-scroll-story]");
+  const storyViewport = story?.querySelector("[data-story-viewport]");
+  const storyIntro = story?.querySelector("[data-story-intro]");
+  const storyChapters = story ? [...story.querySelectorAll("[data-story-chapter]")] : [];
+  const storyCount = story?.querySelector("[data-story-count]");
+  const header = document.querySelector(".site-header");
   const events = new AbortController();
-  const state = { x: 0, y: 0, depth: 0, scroll: 0, paused: motion.matches, reduced: motion.matches, dragging: false };
+  const state = { x: 0, y: 0, depth: 0, scroll: 0, paused: motion.matches, reduced: motion.matches, dragging: false, cinema: Boolean(story && !motion.matches && !compact.matches), frame: storyFrame(0) };
   let scene, loading = false, unavailable = false, destroyed = false, visible = false, idleTask;
-  let origin = null;
+  let origin = null, progressFrame = 0;
+  const configureStory = () => {
+    state.cinema = Boolean(story && !motion.matches && !compact.matches);
+    story?.classList.toggle("story-ready", state.cinema);
+    if (!state.cinema) {
+      state.scroll = 0; state.frame = storyFrame(0);
+      if (storyIntro) storyIntro.inert = false;
+      header?.classList.remove("site-header--dark");
+    }
+  };
+  configureStory();
 
   const setPause = (value) => {
     state.paused = value;
@@ -107,16 +125,39 @@ export function mountEcosystem(host) {
   listen(reset, "click", restore);
   listen(pause, "click", () => { if (!motion.matches) { setPause(!state.paused); load(); } });
   const progress = () => {
-    if (!visible || motion.matches) return;
-    const bounds = host.closest("section").getBoundingClientRect();
-    state.scroll = Math.max(0, Math.min(1, -bounds.top / Math.max(1, bounds.height * .85)));
+    progressFrame = 0;
+    if (motion.matches) return;
+    const bounds = (story || host.closest("section")).getBoundingClientRect();
+    if (story) {
+      if (!state.cinema) return;
+      if (bounds.bottom < 0 || bounds.top > innerHeight) { header?.classList.remove("site-header--dark"); return; }
+      state.scroll = Math.max(0, Math.min(1, -bounds.top / Math.max(1, bounds.height - storyViewport.clientHeight)));
+      state.frame = storyFrame(state.scroll);
+      const frame = state.frame;
+      for (const key of ["progress", "intro", "center", "spread", "connect", "night", "nucleus", "exit", "browserScale", "rotateX", "rotateY", "rotateZ"]) {
+        story.style.setProperty(`--story-${key}`, frame[key].toFixed(4));
+      }
+      frame.copy.forEach((value, index) => {
+        storyChapters[index]?.style.setProperty("--chapter-opacity", value.toFixed(4));
+      });
+      if (storyIntro) storyIntro.inert = frame.intro < .02;
+      if (storyCount) storyCount.textContent = `${state.scroll < .43 ? "01" : state.scroll < .72 ? "02" : "03"} / 03`;
+      header?.classList.toggle("site-header--dark", frame.night > .5 && bounds.top < 82 && bounds.bottom > 82);
+    } else {
+      if (!visible) return;
+      state.scroll = Math.max(0, Math.min(1, -bounds.top / Math.max(1, bounds.height * .85)));
+    }
     pose();
   };
-  listen(window, "scroll", progress, { passive: true });
+  const scheduleProgress = () => { if (!progressFrame) progressFrame = requestAnimationFrame(progress); };
+  listen(window, "scroll", scheduleProgress, { passive: true });
+  listen(window, "resize", scheduleProgress, { passive: true });
+  listen(compact, "change", () => { configureStory(); scheduleProgress(); });
   listen(document, "visibilitychange", () => scene?.setVisible(visible && !document.hidden));
   listen(motion, "change", () => {
     state.reduced = motion.matches;
     setPause(motion.matches);
+    configureStory();
     if (motion.matches) {
       scene?.dispose(); scene = undefined;
       const canvas = host.querySelector("[data-scene-canvas]");
@@ -131,6 +172,7 @@ export function mountEcosystem(host) {
     if (event.persisted) return;
     destroyed = true;
     observer.disconnect();
+    cancelAnimationFrame(progressFrame);
     if ("cancelIdleCallback" in window) cancelIdleCallback(idleTask);
     clearTimeout(idleTask);
     scene?.dispose();

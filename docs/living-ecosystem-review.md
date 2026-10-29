@@ -10,6 +10,12 @@ El hero anterior tenía un rectángulo oscuro con nodos y un canvas de partícul
 
 El nuevo protagonista es una web construida en capas, con volumen, un objeto de enlaces azul y violeta, módulos de clientes, reservas, automatización y analítica y conexiones espaciales. Three.js se utiliza para la geometría, materiales, iluminación y profundidad reales; no se incorporan React, GSAP, modelos remotos, HDR externos ni nuevas imágenes pesadas. La ilustración CSS 3D aparece inmediatamente y también responde al teclado, las capas y el cursor si WebGL no está disponible.
 
+## Secuencia continua al deslizar
+
+La portada y la antigua sección del cubo se sustituyen por una única secuencia de scroll nativo. El escenario permanece visible durante tres tramos: la web se abre y revela sus capas; los módulos se separan y se conectan; y las piezas se reúnen alrededor de LinkedLab. El fondo entero evoluciona con el mismo progreso, incluyendo iluminación, planos de rejilla, anillos y tipografía espacial. La secuencia retrocede exactamente al subir. El texto comercial inicial da paso a explicaciones legibles de cada tramo.
+
+El recorrido ocupa 355 alturas de viewport en escritorio y 320 en móvil, sin interceptar la rueda ni los gestos verticales. Incluye un enlace para ir directamente a los servicios. Con movimiento reducido o una pantalla de poca altura se presenta como contenido estático normal. Las tarjetas de servicios, precios y proyectos también responden al desplazamiento, con trabajo limitado a las secciones visibles.
+
 ## Comportamiento implementado
 
 - Entrada progresiva y ensamblaje, sin pantalla de carga y sin ocultar el titular.
@@ -28,19 +34,19 @@ Medición local con gzip de Node; no equivale a una medición de red, Lighthouse
 
 | Recurso | Antes | Ahora |
 | --- | ---: | ---: |
-| JavaScript inicial, gzip | 5.073 bytes | 3.444 bytes |
-| CSS, gzip | 15.362 bytes | 16.714 bytes |
-| Controlador de la escena, gzip | — | 1.774 bytes, diferido |
-| Three.js y escena, gzip | — | 151.596 bytes, diferidos |
+| JavaScript inicial, gzip | 5.073 bytes | 3.302 bytes |
+| CSS, gzip | 15.362 bytes | 17.542 bytes |
+| Controlador de la escena, gzip | — | 2.697 bytes, diferido |
+| Three.js y escena, gzip | — | 152.064 bytes, diferidos |
 
-El JavaScript inicial baja aproximadamente un 32 %. El CSS aumenta 1,35 KB para incorporar la composición y sus variantes. Los recursos pesados quedan fuera de la ruta de renderizado inicial y las páginas sin escena no inicializan el motor. El fallback sigue siendo utilizable si la descarga no llega a completarse. El build mantiene archivos con huella de contenido y caché inmutable para assets, con revalidación del HTML.
+El JavaScript inicial baja aproximadamente un 35 %. El CSS aumenta 2,18 KB para incorporar la composición y sus variantes. Los recursos pesados quedan fuera de la ruta de renderizado inicial y las páginas sin escena no inicializan el motor. El fallback sigue siendo utilizable si la descarga no llega a completarse. El build mantiene archivos con huella de contenido y caché inmutable para assets, con revalidación del HTML.
 
 ## Verificación realizada
 
 - Instalación limpia: `npm ci --ignore-scripts`.
 - Compilación: `npm run build`.
 - Comprobaciones: `npm run check`, incluidos 35 HTML, referencias locales, contactos regionales, referencias de colaboradores, calculadora y menú adaptable.
-- Nuevas pruebas: movimiento reducido, ahorro de datos, denegación de WebGL, carga fuera de pantalla, teclado, swipe vertical, cancelación del arrastre, limpieza de listeners, bfcache y presupuestos de assets.
+- Nuevas pruebas: movimiento reducido, ahorro de datos, denegación de WebGL, carga fuera de pantalla, teclado, swipe vertical, cancelación del arrastre, limpieza de listeners, bfcache, progreso y reversión de la secuencia, foco del contenido que se desvanece y presupuestos de assets.
 - Cloudflare: `wrangler deploy --dry-run`, Worker y binding ASSETS empaquetados correctamente. No se ejecutó un despliegue real.
 - Navegador: giro con flechas, profundidad, pausa/reinicio, menú móvil/Escape, nodos de sistemas y enlaces del portfolio. Sin overflow horizontal en escritorio y viewports de 320, 390 y 768 px.
 
@@ -54,6 +60,8 @@ El navegador remoto tiene WebGL desactivado. Se ha verificado visualmente el fal
 | `src/scene-controller.js` | Carga diferida, interacción, accesibilidad y preferencias del dispositivo |
 | `src/ecosystem-markup.mjs` | HTML inmediato, textos DE/EN/ES y diagrama de sistemas |
 | `src/ecosystem.css` | Composición espacial, portfolio, estados y adaptación móvil |
+| `src/scroll-story.css` | Escenario de pantalla completa, fondos, capas y transiciones de scroll |
+| `src/story-timeline.mjs` | Timeline compartido, reversible y determinista para CSS 3D y WebGL |
 | `src/client.js` | Integración opcional y retirada de bucles antiguos; foco de cookies |
 | `src/styles.css` | Retirada de estilos del hero y cursor anteriores |
 | `src/content.mjs` | Limpieza de la introducción del portfolio, conservando proyectos y enlaces |

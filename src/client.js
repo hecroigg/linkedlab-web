@@ -235,47 +235,6 @@ if (partnerForm) {
   });
 }
 
-const journey = document.querySelector("[data-digital-journey]");
-const journeyWorld = journey?.querySelector("[data-journey-world]");
-
-if (journey && journeyWorld) {
-  const journeySteps = [...journey.querySelectorAll("[data-journey-step]")];
-  let journeyPointerX = 0;
-  let journeyPointerY = 0;
-  let journeyFrame = 0;
-
-  const renderJourney = () => {
-    journeyFrame = 0;
-    const bounds = journey.getBoundingClientRect();
-    const range = Math.max(1, journey.offsetHeight - innerHeight);
-    const progress = Math.max(0, Math.min(1, -bounds.top / range));
-    const activeStep = Math.min(journeySteps.length - 1, Math.floor(progress * journeySteps.length));
-    journey.style.setProperty("--journey-progress", `${(progress * 100).toFixed(1)}%`);
-    journeySteps.forEach((step, index) => step.classList.toggle("is-active", index === activeStep));
-    header?.classList.toggle("site-header--dark", bounds.top <= 82 && bounds.bottom > 82);
-
-    if (!reducedMotion.matches) {
-      journeyWorld.style.setProperty("--world-rx", `${(-13 + progress * 22 - journeyPointerY * 7).toFixed(2)}deg`);
-      journeyWorld.style.setProperty("--world-ry", `${(-24 + progress * 210 + journeyPointerX * 14).toFixed(2)}deg`);
-      journeyWorld.style.setProperty("--world-lift", `${Math.sin(progress * Math.PI * 2) * -18}px`);
-    }
-  };
-
-  const scheduleJourney = () => {
-    if (!journeyFrame) journeyFrame = requestAnimationFrame(renderJourney);
-  };
-
-  journey.addEventListener("pointermove", (event) => {
-    const bounds = journey.getBoundingClientRect();
-    journeyPointerX = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2));
-    journeyPointerY = Math.max(-1, Math.min(1, (event.clientY / innerHeight - .5) * 2));
-    scheduleJourney();
-  }, { passive: true });
-  addEventListener("scroll", scheduleJourney, { passive: true });
-  addEventListener("resize", scheduleJourney, { passive: true });
-  renderJourney();
-}
-
 // Only pages with an ecosystem load its controller; Three.js remains a second lazy chunk.
 const ecosystems = document.querySelectorAll("[data-ecosystem]");
 if (ecosystems.length) {
@@ -293,7 +252,7 @@ for (const network of document.querySelectorAll("[data-connected-system]")) {
 }
 
 // CSS animations sleep outside the viewport and while the document is hidden.
-const animatedSections = [...document.querySelectorAll(".digital-journey, .capability-marquee, .partner-network")];
+const animatedSections = [...document.querySelectorAll(".capability-marquee, .partner-network")];
 if (animatedSections.length) {
   const visibility = new Map();
   const update = () => animatedSections.forEach((node) => node.classList.toggle("is-in-view", Boolean(visibility.get(node)) && !document.hidden));
@@ -303,4 +262,30 @@ if (animatedSections.length) {
   });
   animatedSections.forEach((node) => observer.observe(node));
   document.addEventListener("visibilitychange", update);
+}
+
+if (!reducedMotion.matches) {
+  const panels = [...document.querySelectorAll(".section--soft, .work-preview, .price-preview, .project-card")];
+  if (panels.length) {
+    const active = new Set();
+    let panelFrame = 0;
+    panels.forEach((panel) => panel.classList.add("scroll-panel"));
+    const renderPanels = () => {
+      panelFrame = 0;
+      if (document.hidden || reducedMotion.matches) return;
+      for (const panel of active) {
+        const bounds = panel.getBoundingClientRect();
+        const value = Math.max(0, Math.min(1, (innerHeight - bounds.top) / (innerHeight + bounds.height)));
+        panel.style.setProperty("--panel-progress", value.toFixed(4));
+      }
+    };
+    const schedulePanels = () => { if (!panelFrame) panelFrame = requestAnimationFrame(renderPanels); };
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) { if (entry.isIntersecting) active.add(entry.target); else active.delete(entry.target); }
+      schedulePanels();
+    }, { rootMargin: "80px" });
+    panels.forEach((panel) => observer.observe(panel));
+    addEventListener("scroll", schedulePanels, { passive: true });
+    addEventListener("resize", schedulePanels, { passive: true });
+  }
 }

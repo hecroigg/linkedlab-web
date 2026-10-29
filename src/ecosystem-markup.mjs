@@ -15,6 +15,7 @@ export function renderEcosystem(lang, variant = "hero") {
     <div class="ecosystem__stage" data-scene-stage tabindex="0" role="group" aria-label="${esc(c.scene)}" aria-describedby="${id}-help">
       <canvas class="ecosystem__canvas" data-scene-canvas aria-hidden="true"></canvas>
       <div class="ecosystem__fallback" aria-hidden="true">
+        <svg class="ecosystem__connections" viewBox="0 0 800 600"><path d="M400 300C240 150 190 150 120 200M400 300C540 100 610 70 685 140M400 300C570 350 630 435 640 480M400 300C260 340 160 430 120 460"/></svg>
         <div class="ecosystem__floor"></div>
         <div class="ecosystem__backplate"></div>
         <div class="ecosystem__browser"><div class="ecosystem__chrome"><i></i><i></i><i></i><span>linkedlab.eu</span><b>↗</b></div><div class="ecosystem__screen"><span class="ecosystem__tiny-brand">◈ LinkedLab</span><strong>${c.line1}<br><em>${c.line2}</em></strong><span class="ecosystem__mock-button">${c.web} ↗</span><div class="ecosystem__sculpture"><i></i><i></i></div><div class="ecosystem__mock-grid"><i></i><i></i><i></i></div></div></div>
@@ -22,6 +23,7 @@ export function renderEcosystem(lang, variant = "hero") {
         <div class="ecosystem__tile ecosystem__tile--bookings"><span>▦</span><div><small>WORKFLOW</small><strong>${c.bookings}</strong><i></i><i></i></div></div>
         <div class="ecosystem__tile ecosystem__tile--automation"><span>⌘</span><div><small>CONNECTED</small><strong>${c.automation}</strong><i></i><i></i></div></div>
         <div class="ecosystem__tile ecosystem__tile--analytics"><div><small>INSIGHTS</small><strong>${c.analytics}</strong><span class="ecosystem__bars"><i></i><i></i><i></i><i></i><i></i></span></div></div>
+        <div class="ecosystem__nucleus"><img src="/assets/linkedlab-logo-mark.webp" width="128" height="128" alt=""><span>LinkedLab</span></div>
       </div>
     </div>
     <figcaption id="${id}-help" class="ecosystem__caption"><span><i aria-hidden="true">↔</i>${c.drag}</span><span class="sr-only">${c.keyboard}</span><div class="ecosystem__actions"><button type="button" data-scene-pause aria-label="${c.pause}" data-pause-label="${c.pause}" data-play-label="${c.play}" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button><button type="button" data-scene-reset aria-label="${c.reset}"><span aria-hidden="true">↺</span></button></div></figcaption>

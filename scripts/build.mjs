@@ -11,7 +11,7 @@ import { build, transform } from "esbuild";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
-const stylesheetSource = (await transform((await Promise.all(["styles.css", "ecosystem.css"].map((file) => readFile(join(root, "src", file), "utf8")))).join("\n"), { loader: "css", minify: true, target: "es2020" })).code;
+const stylesheetSource = (await transform((await Promise.all(["styles.css", "ecosystem.css", "scroll-story.css"].map((file) => readFile(join(root, "src", file), "utf8")))).join("\n"), { loader: "css", minify: true, target: "es2020" })).code;
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 const bundled = await build({
@@ -81,47 +81,23 @@ function renderHome(lang) {
   const t = content[lang];
   const p = t.home;
   return `
-    <section class="hero hero--home">
-      <div class="hero__copy">
-        <p class="eyebrow">${esc(p.heroKicker)}</p>
-        <h1 class="kinetic-title">${kineticTitle(p.heroTitle)}</h1>
-        <p class="hero__lead">${esc(p.heroText)}</p>
-        <div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div>
-        <p class="hero__note">${esc(p.heroNote)}</p>
+    <section class="scroll-story" data-scroll-story aria-label="${esc(p.journeyTitle)}">
+      <div class="scroll-story__viewport" data-story-viewport>
+        <div class="scroll-story__environment" aria-hidden="true"><div class="scroll-story__night"></div><div class="scroll-story__wash"></div><div class="scroll-story__grid"></div><span class="scroll-story__halo scroll-story__halo--one"></span><span class="scroll-story__halo scroll-story__halo--two"></span><span class="scroll-story__word">LINKED</span></div>
+        <div class="hero hero--home">
+          <div class="hero__copy" data-story-intro>
+            <p class="eyebrow">${esc(p.heroKicker)}</p><h1 class="kinetic-title">${kineticTitle(p.heroTitle)}</h1>
+            <p class="hero__lead">${esc(p.heroText)}</p><div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div><p class="hero__note">${esc(p.heroNote)}</p>
+          </div>
+          ${renderEcosystem(lang)}
+        </div>
+        <ol class="scroll-story__chapters">${p.journeySteps.map(([n, title, text], index) => `<li data-story-chapter="${index}"><span class="eyebrow">${esc(n)} / ${esc(p.journeyKicker)}</span><h2>${esc(title)}</h2><p>${esc(text)}</p></li>`).join("")}</ol>
+        <div class="scroll-story__rail"><span class="scroll-story__cue"><i aria-hidden="true">↓</i>${esc(p.journeyScroll)}</span><span class="scroll-story__track" aria-hidden="true"><i></i></span><span class="scroll-story__count" aria-hidden="true" data-story-count>01 / 03</span></div>
+        <a class="scroll-story__skip" href="#story-content">${esc(lang === "de" ? "Direkt zu den Leistungen" : lang === "es" ? "Ir a los servicios" : "Skip to services")} ↘</a>
       </div>
-      ${renderEcosystem(lang)}
     </section>
     <section class="capability-marquee" aria-hidden="true"><div>${[...p.journeyTicker, ...p.journeyTicker].map((item) => `<span>${esc(item)}<i></i></span>`).join("")}</div></section>
-    <section class="digital-journey" data-digital-journey>
-      <div class="journey-stage">
-        <div class="journey-copy">
-          <p class="eyebrow">${esc(p.journeyKicker)}</p>
-          <h2>${esc(p.journeyTitle)}</h2>
-          <p>${esc(p.journeyText)}</p>
-          <span class="journey-scroll"><i></i>${esc(p.journeyScroll)}</span>
-        </div>
-        <div class="journey-world" data-journey-world aria-hidden="true">
-          <span class="journey-gridplane"></span><span class="journey-halo"></span>
-          <div class="journey-machine">
-            <span class="journey-platform journey-platform--1"></span><span class="journey-platform journey-platform--2"></span>
-            <div class="journey-cube">
-              <span class="journey-face journey-face--front"><img src="/assets/linkedlab-logo-mark.webp" width="256" height="256" alt=""></span>
-              <span class="journey-face journey-face--back">CRM</span><span class="journey-face journey-face--right">SEO</span>
-              <span class="journey-face journey-face--left">WEB</span><span class="journey-face journey-face--top">DATA</span><span class="journey-face journey-face--bottom">AI</span>
-            </div>
-            <span class="journey-ring journey-ring--1"></span><span class="journey-ring journey-ring--2"></span><span class="journey-ring journey-ring--3"></span>
-            <span class="journey-satellite journey-satellite--1"><i>01</i>${esc(t.nav.websites)}</span>
-            <span class="journey-satellite journey-satellite--2"><i>02</i>${esc(t.ui.system[0])}</span>
-            <span class="journey-satellite journey-satellite--3"><i>03</i>${esc(t.ui.orbitExtras[2])}</span>
-            <span class="journey-satellite journey-satellite--4"><i>04</i>${esc(t.ui.system[4])}</span>
-            <span class="journey-shard journey-shard--1"></span><span class="journey-shard journey-shard--2"></span><span class="journey-shard journey-shard--3"></span><span class="journey-shard journey-shard--4"></span>
-          </div>
-        </div>
-        <ol class="journey-steps">${p.journeySteps.map(([n, title, text], index) => `<li data-journey-step="${index}"><span>${esc(n)}</span><div><strong>${esc(title)}</strong><p>${esc(text)}</p></div></li>`).join("")}</ol>
-        <div class="journey-progress"><i></i></div>
-      </div>
-    </section>
-    <section class="trust-strip" aria-label="LinkedLab principles">${p.trust.map(([title, text]) => `<div><strong>${esc(title)}</strong><span>${esc(text)}</span></div>`).join("")}</section>
+    <section class="trust-strip" id="story-content" aria-label="LinkedLab principles">${p.trust.map(([title, text]) => `<div><strong>${esc(title)}</strong><span>${esc(text)}</span></div>`).join("")}</section>
     <section class="section split-intro"><div>${sectionHead(p.problemKicker, p.problemTitle)}</div><p class="large-copy">${esc(p.problemText)}</p></section>
     <section class="section section--soft">
       ${sectionHead(t.common.eyebrow, p.servicesTitle)}
