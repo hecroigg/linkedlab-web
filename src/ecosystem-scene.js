@@ -6,16 +6,18 @@ import {
 } from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { ecosystemCopy } from "./ecosystem-markup.mjs";
+import { scenePixelRatio } from "./scene-quality.mjs";
 
 const BLUE = 0x2864ff;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const ease = (value) => 1 - Math.pow(1 - clamp(value, 0, 1), 3);
 
 // All surfaces are drawn locally: no remote fonts, models, HDRs, images or tracking.
-function surfaceTexture(width, height, draw) {
+function surfaceTexture(width, height, draw, density = 2) {
   const canvas = document.createElement("canvas");
-  canvas.width = width; canvas.height = height;
+  canvas.width = width * density; canvas.height = height * density;
   const ctx = canvas.getContext("2d");
+  ctx.scale(density, density);
   draw(ctx, width, height);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
@@ -118,7 +120,7 @@ export function createEcosystem(host, state, { coarse, context }) {
   const stage = host.querySelector("[data-scene-stage]");
   const canvas = host.querySelector("canvas");
   const c = ecosystemCopy[host.dataset.lang] || ecosystemCopy.en;
-  const renderer = new WebGLRenderer({ canvas, context, alpha: true, antialias: !coarse, powerPreference: "low-power", stencil: false });
+  const renderer = new WebGLRenderer({ canvas, context, alpha: true, antialias: true, powerPreference: "low-power", stencil: false });
   renderer.setClearColor(0xffffff, 0);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -146,7 +148,7 @@ export function createEcosystem(host, state, { coarse, context }) {
     const group = new Group();
     group.add(new Mesh(panelGeometry(w, h), material));
     if (texture) {
-      texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
+      texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
       const front = new Mesh(new PlaneGeometry(w, h), new MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }));
       front.position.z = .074; group.add(front);
     }
@@ -159,9 +161,9 @@ export function createEcosystem(host, state, { coarse, context }) {
   wire.position.set(-.27, -.26, -.51); browser.add(wire);
   const web = plate(4.8, 3.36, websiteTexture(c)); browser.add(web);
   const sculpture = new Group(); sculpture.position.set(1.16, .05, .42);
-  const a = new Mesh(new TorusGeometry(.58, .18, coarse ? 8 : 12, coarse ? 36 : 64), blue);
+  const a = new Mesh(new TorusGeometry(.58, .18, coarse ? 12 : 16, 64), blue);
   a.rotation.set(.32, -.4, -.53);
-  const b = new Mesh(new TorusGeometry(.58, .18, coarse ? 8 : 12, coarse ? 36 : 64), violet);
+  const b = new Mesh(new TorusGeometry(.58, .18, coarse ? 12 : 16, 64), violet);
   b.position.set(.32, .42, .1); b.rotation.set(-.42, .76, -.45);
   sculpture.add(a, b); web.add(sculpture);
   browser.position.set(.05, .03, 0); browser.rotation.set(-.12, -.26, -.065); world.add(browser);
@@ -205,7 +207,7 @@ export function createEcosystem(host, state, { coarse, context }) {
     const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
     gradient.addColorStop(0, "rgba(32,70,146,.23)"); gradient.addColorStop(1, "rgba(32,70,146,0)");
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128);
-  });
+  }, 1);
   const shadow = new Mesh(new PlaneGeometry(8.5, 3), new MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false }));
   shadow.position.set(0, -2.65, -.8); shadow.rotation.x = -.8; world.add(shadow);
 
@@ -216,7 +218,7 @@ export function createEcosystem(host, state, { coarse, context }) {
   function resize() {
     const { width, height } = stage.getBoundingClientRect();
     if (!width || !height || disposed) return;
-    const dpr = Math.min(devicePixelRatio || 1, coarse ? 1.15 : 1.5, Math.sqrt(950000 / (width * height)));
+    const dpr = scenePixelRatio(width, height, window.devicePixelRatio || 1, coarse, renderer.capabilities.maxTextureSize);
     renderer.setPixelRatio(dpr); renderer.setSize(width, height, false);
     camera.aspect = width / height;
     baseCameraDistance = Math.max(11.5, 8.1 / (2 * Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
@@ -286,6 +288,7 @@ export function createEcosystem(host, state, { coarse, context }) {
     else { previous = now() - frameInterval; update(); }
   }
   const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(stage);
+  window.addEventListener("resize", resize, { passive: true });
   function lost() { setVisible(false); contextLost = true; host.classList.remove("is-rendered"); host.dataset.sceneState = "fallback"; }
   canvas.addEventListener("webglcontextlost", lost);
   resize();
@@ -294,6 +297,7 @@ export function createEcosystem(host, state, { coarse, context }) {
     dispose() {
       if (disposed) return;
       disposed = true; cancelAnimationFrame(raf); resizeObserver.disconnect();
+      window.removeEventListener("resize", resize);
       canvas.removeEventListener("webglcontextlost", lost);
       const geometries = new Set(), materials = new Set(), textures = new Set();
       scene.traverse((object) => {

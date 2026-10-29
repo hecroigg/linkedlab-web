@@ -30,7 +30,7 @@ El recorrido ocupa 355 alturas de viewport en escritorio y 320 en móvil, sin in
 
 ## Tamaños medidos del build
 
-Medición local con gzip de Node; no equivale a una medición de red, Lighthouse o Core Web Vitals.
+Medición local con gzip de Node de la versión anterior al ajuste de nitidez; no equivale a una medición de red, Lighthouse o Core Web Vitals.
 
 | Recurso | Antes | Ahora |
 | --- | ---: | ---: |
@@ -52,10 +52,21 @@ El JavaScript inicial baja aproximadamente un 35 %. El CSS aumenta 2,18 KB para 
 
 El navegador remoto tiene WebGL desactivado. Se ha verificado visualmente el fallback CSS 3D y sus controles; falta revisar el renderizado WebGL en un navegador con GPU real. Los viewports pequeños son pruebas de layout, no mediciones de rendimiento en hardware móvil. No hay una herramienta Lighthouse disponible en este entorno: no se atribuyen puntuaciones ni mejoras de Core Web Vitals sin medirlas.
 
+## Nitidez de la escena en pantalla completa
+
+La captura de revisión mostraba el contenido HTML nítido y el canvas WebGL borroso. El límite anterior de 950.000 píxeles dejaba una escena de 2048 × 1152 por debajo de un píxel de render por píxel CSS; los dispositivos táctiles también se limitaban a DPR 1,15.
+
+La política de calidad ahora admite DPR 2 en escritorio y DPR 3 en pantallas táctiles. Los presupuestos son 8,4 y 4,2 millones de píxeles respectivamente, con un suelo de resolución CSS para pantallas grandes y respetando el tamaño máximo admitido por la GPU. Se conserva el límite de frames y el render móvil bajo demanda; la resolución no se reduce durante el scroll. El resize vuelve a calcularla al cambiar de viewport o pantalla.
+
+Las superficies locales de la web, los cuatro módulos y el núcleo se dibujan al doble de resolución en cada eje; la sombra suave mantiene su tamaño anterior. El filtrado anisotrópico sube hasta 8 muestras, dentro de la capacidad del dispositivo. El antialias se solicita al crear el contexto y el renderer también en móvil; se aumentan los segmentos de los dos aros.
+
+Las pruebas comprueban teléfonos Retina, escritorio Retina, pantallas grandes, presupuesto de píxeles, límites de hardware y los atributos de creación de contexto tanto con puntero fino como táctil. La compilación y las pruebas completas se ejecutan en CI. Este ajuste no cuenta todavía con una comparación visual en hardware con GPU ni una medición de rendimiento en un móvil real.
+
 ## Archivos
 
 | Archivo | Cambio |
 | --- | --- |
+| `src/scene-quality.mjs` | Política de resolución y presupuestos para Retina y pantallas completas |
 | `src/ecosystem-scene.js` | Geometría, materiales, iluminación, cámara y ciclo de vida del renderizado |
 | `src/scene-controller.js` | Carga diferida, interacción, accesibilidad y preferencias del dispositivo |
 | `src/ecosystem-markup.mjs` | HTML inmediato, textos DE/EN/ES y diagrama de sistemas |

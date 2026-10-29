@@ -60,7 +60,7 @@ export function mountEcosystem(host) {
     loading = true;
     try {
       const canvas = host.querySelector("[data-scene-canvas]");
-      const context = canvas.getContext("webgl2", { alpha: true, antialias: !coarse.matches, powerPreference: "low-power", stencil: false });
+      const context = canvas.getContext("webgl2", { alpha: true, antialias: true, powerPreference: "low-power", stencil: false });
       if (!context) { host.dataset.sceneState = "fallback"; unavailable = true; return; }
       const { createEcosystem } = await import("./ecosystem-scene.js");
       if (destroyed || !visible || document.hidden || motion.matches || connection?.saveData) return;

@@ -4,6 +4,7 @@ import { gzipSync } from "node:zlib";
 import { mountEcosystem } from "../src/scene-controller.js";
 import { paths } from "../src/content.mjs";
 import { storyFrame } from "../src/story-timeline.mjs";
+import { scenePixelRatio } from "../src/scene-quality.mjs";
 
 // Exercise lifecycle and real interaction handlers without requiring a GPU in CI.
 class Node extends EventTarget {
@@ -22,12 +23,12 @@ function event(target, name, details = {}) {
   for (const [key, value] of Object.entries(details)) Object.defineProperty(e, key, { value });
   target.dispatchEvent(e); return e;
 }
-function fixture({ reduced = false, saveData = false, cinematic = false } = {}) {
+function fixture({ reduced = false, saveData = false, cinematic = false, coarse = false } = {}) {
   const host = new Node(), stage = new Node(), pause = new Node(), reset = new Node(), depth = new Node(), canvas = new Node();
   const win = new Node(), doc = new Node(), media = new Node(), jobs = [], frames = [];
-  const observers = []; let contexts = 0;
+  const observers = []; let contexts = 0, contextOptions;
   depth.value = "0"; pause.dataset = { playLabel: "Play", pauseLabel: "Pause" };
-  canvas.getContext = () => { contexts++; return null; };
+  canvas.getContext = (type, options) => { contexts++; contextOptions = options; return null; };
   host.querySelector = (selector) => ({ "[data-scene-stage]": stage, "[data-scene-pause]": pause, "[data-scene-reset]": reset, "[data-scene-depth]": depth, "[data-scene-canvas]": canvas })[selector];
   const story = new Node(), intro = new Node(), chapters = [new Node(), new Node(), new Node()];
   let storyTop = -1100;
@@ -39,7 +40,7 @@ function fixture({ reduced = false, saveData = false, cinematic = false } = {}) 
   media.matches = reduced;
   Object.assign(globalThis, {
     window: Object.assign(win, { WebGL2RenderingContext: class {}, requestIdleCallback: true }), document: doc,
-    matchMedia: (query) => query.includes("reduced-motion") ? media : Object.assign(new Node(), { matches: false }),
+    matchMedia: (query) => query.includes("reduced-motion") ? media : Object.assign(new Node(), { matches: query.includes("pointer: coarse") && coarse }),
     requestIdleCallback: (fn) => jobs.push(fn), cancelIdleCallback: () => {},
     requestAnimationFrame: (fn) => frames.push(fn), cancelAnimationFrame: () => {}, innerHeight: 900,
     IntersectionObserver: class {
@@ -49,7 +50,7 @@ function fixture({ reduced = false, saveData = false, cinematic = false } = {}) 
   });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: { connection: { saveData } } });
   mountEcosystem(host);
-  return { host, stage, pause, reset, depth, win, doc, media, jobs, frames, story, intro, chapters, setStoryTop: (value) => { storyTop = value; }, observer: observers[0], contexts: () => contexts };
+  return { host, stage, pause, reset, depth, win, doc, media, jobs, frames, story, intro, chapters, setStoryTop: (value) => { storyTop = value; }, observer: observers[0], contexts: () => contexts, contextOptions: () => contextOptions };
 }
 for (const options of [{ reduced: true }, { saveData: true }]) {
   const f = fixture(options);
@@ -101,6 +102,29 @@ for (const value of [-1, 0, .2, .5, .8, 1, 2, NaN]) {
 }
 assert.notEqual(storyFrame(.3).rotateY, storyFrame(.6).rotateY);
 assert.ok(storyFrame(.35).spread > .9 && storyFrame(.85).nucleus > .9);
+
+// Readability regressions: fullscreen rendering must not fall below CSS resolution,
+// and common Retina phones should keep all three device pixels per CSS pixel.
+assert.equal(scenePixelRatio(390, 844, 3, true), 3, "Retina phone preserves native sharpness");
+assert.equal(scenePixelRatio(430, 932, 3, true), 3, "Large Retina phone preserves native sharpness");
+assert.equal(scenePixelRatio(1920, 1080, 2, false), 2, "Retina desktop keeps double-density output");
+assert.equal(scenePixelRatio(5120, 2880, 1, false), 1, "Large displays must not be undersampled");
+assert.equal(scenePixelRatio(1024, 768, 1, false), 1, "Standard-density output stays bounded");
+assert.equal(scenePixelRatio(0, 844, 3, true), 1, "Collapsed stage has a safe ratio");
+assert.equal(scenePixelRatio(390, NaN, 3, true), 1);
+assert.equal(scenePixelRatio(390, 844, NaN, true), 1);
+for (const [width, height, coarse] of [[2048, 1152, false], [3840, 2160, false], [1024, 1366, true]]) {
+  const ratio = scenePixelRatio(width, height, 3, coarse);
+  assert.ok(ratio >= 1, "Quality budget must not blur a fullscreen stage");
+  assert.ok(width * height * ratio * ratio <= Math.max(width * height, coarse ? 4200000 : 8400000) + 1, "GPU allocation remains bounded");
+}
+assert.equal(scenePixelRatio(5120, 2880, 2, false, 4096), .8, "Respect hardware texture limits");
+for (const coarse of [false, true]) {
+  const aa = fixture({ coarse });
+  aa.observer.callback([{ isIntersecting: true }]); await aa.jobs.shift()();
+  assert.equal(aa.contextOptions().antialias, true, "Smooth edges must be requested when the context is created, including touch devices");
+  event(aa.win, "pagehide", { persisted: false });
+}
 
 // Guard the actual delivered asset budgets, not source-file sizes.
 const dist = new URL("../dist/", import.meta.url);
