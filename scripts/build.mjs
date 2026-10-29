@@ -82,18 +82,21 @@ function renderHome(lang) {
   const p = t.home;
   return `
     <section class="scroll-story" data-scroll-story aria-label="${esc(p.journeyTitle)}">
+      <div class="scroll-story__intro-slot" data-story-intro-slot></div>
+      <div class="scroll-story__sequence" data-story-sequence>
       <div class="scroll-story__viewport" data-story-viewport>
         <div class="scroll-story__environment" aria-hidden="true"><div class="scroll-story__night"></div><div class="scroll-story__wash"></div><div class="scroll-story__grid"></div><span class="scroll-story__halo scroll-story__halo--one"></span><span class="scroll-story__halo scroll-story__halo--two"></span><span class="scroll-story__word">LINKED</span></div>
         <div class="hero hero--home">
           <div class="hero__copy" data-story-intro>
             <p class="eyebrow">${esc(p.heroKicker)}</p><h1 class="kinetic-title">${kineticTitle(p.heroTitle)}</h1>
-            <p class="hero__lead">${esc(p.heroText)}</p><div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div><p class="hero__note">${esc(p.heroNote)}</p>
+            <p class="hero__lead"><span class="hero__lead-desktop">${esc(p.heroText)}</span><span class="hero__lead-mobile">${esc(p.heroTextMobile)}</span></p><div class="button-row">${button(t.common.primaryCta, paths[lang].contact)}${button(t.common.secondaryCta, paths[lang].pricing, "ghost")}</div><p class="hero__note">${esc(p.heroNote)}</p>
           </div>
           ${renderEcosystem(lang)}
         </div>
         <ol class="scroll-story__chapters">${p.journeySteps.map(([n, title, text], index) => `<li data-story-chapter="${index}"><span class="eyebrow">${esc(n)} / ${esc(p.journeyKicker)}</span><h2>${esc(title)}</h2><p>${esc(text)}</p></li>`).join("")}</ol>
         <div class="scroll-story__rail"><span class="scroll-story__cue"><i aria-hidden="true">↓</i>${esc(p.journeyScroll)}</span><span class="scroll-story__track" aria-hidden="true"><i></i></span><span class="scroll-story__count" aria-hidden="true" data-story-count>01 / 03</span></div>
         <a class="scroll-story__skip" href="#story-content">${esc(lang === "de" ? "Direkt zu den Leistungen" : lang === "es" ? "Ir a los servicios" : "Skip to services")} ↘</a>
+      </div>
       </div>
     </section>
     <section class="capability-marquee" aria-hidden="true"><div>${[...p.journeyTicker, ...p.journeyTicker].map((item) => `<span>${esc(item)}<i></i></span>`).join("")}</div></section>

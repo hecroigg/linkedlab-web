@@ -1,5 +1,8 @@
 /* One continuous, native-scroll stage: the entire composition becomes the transition. */
 .scroll-story { --story-progress: 0; --story-intro: 1; --story-center: 0; --story-spread: 0; --story-connect: 0; --story-night: 0; --story-nucleus: 0; --story-exit: 0; --story-browserScale: 1; --story-rotateX: 12; --story-rotateY: -19; --story-rotateZ: -5; position: relative; background: #fff; }
+.scroll-story__intro-slot:empty { display: none; }
+.scroll-story__sequence { height: 100%; }
+.hero__lead-mobile { display: none; }
 .scroll-story__viewport { position: relative; min-height: calc(100svh - 5rem); isolation: isolate; }
 .scroll-story__environment { position: absolute; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; }
 .scroll-story__night { position: absolute; inset: 0; background: #071426; opacity: var(--story-night); }
@@ -85,17 +88,30 @@
   .story-ready .hero__copy { transform: translateY(calc(var(--story-center) * -120px)); }
 }
 @media (max-width: 720px) {
+  .hero__lead-desktop { display: none; }
+  .hero__lead-mobile { display: inline; }
+  .scroll-story .hero--home .hero__copy { display: block; }
+  .scroll-story__intro-slot { display: flex; align-items: center; width: calc(100% - 2rem); min-height: calc(72svh - 4.5rem); margin-inline: auto; padding-block: clamp(2rem, 5svh, 3rem) 2.5rem; }
+  .story-ready .scroll-story__intro-slot .hero__copy { width: 100%; max-width: none; padding: 0; opacity: 1; transform: none; will-change: auto; }
+  .scroll-story__intro-slot .eyebrow { display: flex; align-items: center; gap: .6rem; margin: 0 0 1rem; color: #2864ff; font-size: .57rem; letter-spacing: .12em; }
+  .scroll-story__intro-slot .eyebrow::before { flex-shrink: 0; width: .4rem; height: .4rem; content: ""; border-radius: 50%; background: #2864ff; box-shadow: 0 0 0 4px #edf2ff; }
+  .scroll-story__intro-slot h1 { max-width: 16ch; margin: 0 0 1.25rem; font-size: clamp(2.25rem, 8.8vw, 3.6rem); line-height: 1.02; letter-spacing: -.065em; }
+  .scroll-story__intro-slot .hero__lead { margin: 0 0 1.5rem; color: #5b687b; font-size: 1rem; line-height: 1.65; }
+  .scroll-story__intro-slot .button-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .scroll-story__intro-slot .button { min-height: 3rem; gap: .4rem; padding-inline: .85rem; font-size: .78rem; }
+  .scroll-story__intro-slot .hero__note { margin: 1rem 0 0; color: #647288; font-size: .72rem; line-height: 1.6; }
   .scroll-story:not(.story-ready) .scroll-story__chapters { grid-template-columns: 1fr; }
-  .story-ready { --story-viewport-offset: 4.5rem; height: 320svh; }
+  .story-ready { --story-viewport-offset: 4.5rem; height: auto; }
+  .story-ready .scroll-story__sequence { height: 320svh; }
   .story-ready .scroll-story__viewport { min-height: 640px; }
   .story-ready .hero--home { display: block; width: calc(100% - 2rem); padding-block: 1.5rem; }
   .story-ready .hero--home .hero__copy { display: block; max-width: 100%; }
   .story-ready .hero__copy > .eyebrow { margin-bottom: .8rem; }
   .story-ready .hero--home h1 { max-width: 16ch; margin-bottom: 1.2rem; font-size: clamp(2.25rem, 8.8vw, 3.6rem); }
-  .story-ready .hero__lead, .story-ready .hero__note { display: none; }
+  .story-ready .hero__lead, .story-ready .hero__note { display: block; }
   .story-ready .hero__copy .button-row { display: flex; gap: .4rem; }
-  .story-ready .ecosystem__fallback { inset: 36% 0 13%; transform: translateY(calc(var(--story-center) * -25%)) scale(calc(.87 + var(--story-center) * .04)) rotateY(calc(var(--scene-x,0) * 8deg)); }
-  .story-ready .ecosystem__overline { top: 41%; right: 5%; left: 5%; opacity: var(--story-intro); }
+  .story-ready .ecosystem__fallback { inset: 15% 0 28%; transform: translateY(calc(var(--story-center) * -6%)) scale(.9) rotateY(calc(var(--scene-x,0) * 8deg)); }
+  .story-ready .ecosystem__overline { top: calc(4.5rem + 1rem); right: 5%; left: 5%; opacity: var(--story-intro); }
   .story-ready .ecosystem__browser { top: 22%; }
   .story-ready .ecosystem__backplate { height: 52%; }
   .story-ready .ecosystem__tile--clients { width: 27%; }

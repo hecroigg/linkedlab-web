@@ -8,10 +8,15 @@ export function mountEcosystem(host) {
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const coarse = matchMedia("(pointer: coarse)");
   const compact = matchMedia("(max-height: 599px)");
+  const mobile = matchMedia("(max-width: 720px)");
   const connection = navigator.connection;
   const story = host.closest("[data-scroll-story]");
+  const storySequence = story?.querySelector("[data-story-sequence]") || story;
   const storyViewport = story?.querySelector("[data-story-viewport]");
   const storyIntro = story?.querySelector("[data-story-intro]");
+  const introSlot = story?.querySelector("[data-story-intro-slot]");
+  const introParent = storyIntro?.parentElement;
+  const introNext = storyIntro?.nextSibling;
   const storyChapters = story ? [...story.querySelectorAll("[data-story-chapter]")] : [];
   const storyCount = story?.querySelector("[data-story-count]");
   const header = document.querySelector(".site-header");
@@ -20,6 +25,11 @@ export function mountEcosystem(host) {
   let scene, loading = false, unavailable = false, destroyed = false, visible = false, idleTask;
   let origin = null, progressFrame = 0;
   const configureStory = () => {
+    state.mobileIntro = Boolean(story && mobile.matches);
+    if (storyIntro && introSlot && introParent) {
+      if (mobile.matches) introSlot.append(storyIntro);
+      else introParent.insertBefore(storyIntro, introNext);
+    }
     state.cinema = Boolean(story && !motion.matches && !compact.matches);
     story?.classList.toggle("story-ready", state.cinema);
     if (!state.cinema) {
@@ -27,6 +37,7 @@ export function mountEcosystem(host) {
       if (storyIntro) storyIntro.inert = false;
       header?.classList.remove("site-header--dark");
     }
+    if (state.mobileIntro && storyIntro) storyIntro.inert = false;
   };
   configureStory();
 
@@ -127,7 +138,7 @@ export function mountEcosystem(host) {
   const progress = () => {
     progressFrame = 0;
     if (motion.matches) return;
-    const bounds = (story || host.closest("section")).getBoundingClientRect();
+    const bounds = (storySequence || host.closest("section")).getBoundingClientRect();
     if (story) {
       if (!state.cinema) return;
       if (bounds.bottom < 0 || bounds.top > innerHeight) { header?.classList.remove("site-header--dark"); return; }
@@ -140,7 +151,7 @@ export function mountEcosystem(host) {
       frame.copy.forEach((value, index) => {
         storyChapters[index]?.style.setProperty("--chapter-opacity", value.toFixed(4));
       });
-      if (storyIntro) storyIntro.inert = frame.intro < .02;
+      if (storyIntro) storyIntro.inert = !state.mobileIntro && frame.intro < .02;
       if (storyCount) storyCount.textContent = `${state.scroll < .43 ? "01" : state.scroll < .72 ? "02" : "03"} / 03`;
       header?.classList.toggle("site-header--dark", frame.night > .5 && bounds.top < 82 && bounds.bottom > 82);
     } else {
@@ -153,6 +164,7 @@ export function mountEcosystem(host) {
   listen(window, "scroll", scheduleProgress, { passive: true });
   listen(window, "resize", scheduleProgress, { passive: true });
   listen(compact, "change", () => { configureStory(); scheduleProgress(); });
+  listen(mobile, "change", () => { configureStory(); scheduleProgress(); });
   listen(document, "visibilitychange", () => scene?.setVisible(visible && !document.hidden));
   listen(motion, "change", () => {
     state.reduced = motion.matches;
