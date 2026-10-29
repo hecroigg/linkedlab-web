@@ -249,7 +249,8 @@ export function createEcosystem(host, state, { coarse, context }) {
     sculpture.position.z = .42 + expansion * .5;
     if (life) sculpture.rotation.y = Math.sin(life * .35) * .08;
     if (cinematic) {
-      world.position.set(portrait ? 0 : (1 - cinematic.center) * 2.3, portrait ? -3 + cinematic.center * 4 : -.05, 0);
+      const portraitY = state.mobileIntro ? -.2 + cinematic.center * 1.2 : -3 + cinematic.center * 4;
+      world.position.set(portrait ? 0 : (1 - cinematic.center) * 2.3, portrait ? portraitY : -.05, 0);
       world.scale.setScalar((portrait ? .9 + cinematic.center * .1 : .64 + cinematic.center * .36) * (.97 + entry * .03));
       world.rotation.set(pitch * .16, yaw * .4, 0);
       browser.rotation.set(cinematic.rotateX * Math.PI / 180, cinematic.rotateY * Math.PI / 180, cinematic.rotateZ * Math.PI / 180);
